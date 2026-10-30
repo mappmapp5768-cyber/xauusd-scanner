@@ -24,7 +24,6 @@
 </head>
 <body class="min-h-screen py-8 px-4">
     <div class="max-w-6xl mx-auto">
-        <!-- ក្បាលទំព័រ -->
         <header class="text-center mb-8">
             <h1 class="text-3xl font-bold text-amber-400 mb-2">
                 <i class="fa fa-line-chart"></i> XAUUSD / មាស
@@ -32,7 +31,6 @@
             <p class="text-slate-400">ប្រព័ន្ធវិភាគដោយស្វ័យប្រវត្តិ — EMA + RSI + ATR</p>
         </header>
 
-        <!-- ផ្ទាំងព័ត៌មានតម្លៃ -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div class="card text-center">
                 <p class="text-slate-400 text-sm">តម្លៃបច្ចុប្បន្ន</p>
@@ -52,7 +50,6 @@
             </div>
         </div>
 
-        <!-- ក្រាហ្វ -->
         <div class="card mb-6">
             <h2 class="text-lg font-semibold mb-3 text-slate-300">
                 <i class="fa fa-area-chart"></i> តារាងតម្លៃ
@@ -60,7 +57,6 @@
             <div id="chart" style="width: 100%; height: 420px; border-radius: 8px;"></div>
         </div>
 
-        <!-- សញ្ញាជួញដូរ -->
         <div class="card">
             <h2 class="text-lg font-semibold mb-4 text-center text-slate-300">
                 <i class="fa fa-bullseye"></i> ការណែនាំជួញដូរ
@@ -75,12 +71,11 @@
                     <p id="sl" class="text-xl font-bold text-red-400">—</p>
                 </div>
                 <div class="card text-center border-2 border-green-400">
-                    <p class="text-slate-400 text-sm mb-1">យកប្រាក់ចំណេញ (Take Profit)</p>
+                    <p class="text-slate-400 text-sm mb-1">យកចំណេញ (Take Profit)</p>
                     <p id="tp" class="text-xl font-bold text-green-400">—</p>
                 </div>
             </div>
 
-            <!-- ប៊ូតុងសញ្ញា -->
             <div id="signal-box" class="text-center p-6 rounded-xl neutral">
                 <p class="text-lg mb-2">កំពុងរង់ចាំសញ្ញា...</p>
                 <p id="confidence" class="text-sm opacity-80">—</p>
@@ -93,12 +88,9 @@
     </div>
 
     <script>
-        // អថេរសកល
-        let chart, candleSeries, emaSeries, rsiLine;
+        let chart, candleSeries, emaSeries;
         let priceData = [];
-        let lastPrice = 0;
 
-        // ចាប់ផ្តើមក្រាហ្វ
         function initChart() {
             const container = document.getElementById('chart');
             chart = LightweightCharts.createChart(container, {
@@ -110,38 +102,35 @@
             });
 
             candleSeries = chart.addCandlestickSeries({
-                upColor: '#10b981', downColor: '#ef4444', borderUpColor: '#10b981', borderDownColor: '#ef4444',
+                upColor: '#10b981', downColor: '#ef4444',
+                borderUpColor: '#10b981', borderDownColor: '#ef4444',
                 wickUpColor: '#10b981', wickDownColor: '#ef4444'
             });
 
-            emaSeries = chart.addLineSeries({ color: '#f59e0b', lineWidth: 2, opacity: 0.8 });
+            emaSeries = chart.addLineSeries({ color: '#f59e0b', lineWidth: 2 });
 
             window.addEventListener('resize', () => {
                 chart.applyOptions({ width: container.clientWidth });
             });
         }
 
-        // បង្កើតទិន្នន័យគំរូ (សម្រាប់បង្ហាញ — អាចភ្ជាប់ API ពិតនៅពេលក្រោយ)
         function generateSampleData() {
             const data = [];
             let basePrice = 2320.50;
-            const now = Math.floor(Date.now() / 60000); // រាល់ 1 នាទី
-
+            const now = Math.floor(Date.now() / 60000);
             for (let i = 60; i >= 0; i--) {
                 const time = now - i * 60;
-                const volatility = (Math.random() - 0.5) * 4;
+                const vol = (Math.random() - 0.5) * 4;
                 const open = basePrice;
-                const close = basePrice + volatility;
+                const close = basePrice + vol;
                 const high = Math.max(open, close) + Math.random() * 1.5;
                 const low = Math.min(open, close) - Math.random() * 1.5;
-
                 data.push({ time, open, high, low, close });
                 basePrice = close;
             }
             return data;
         }
 
-        // គណនា EMA
         function calculateEMA(data, period) {
             const k = 2 / (period + 1);
             let ema = [data[0].close];
@@ -151,15 +140,13 @@
             return ema;
         }
 
-        // គណនា RSI
         function calculateRSI(data, period = 14) {
             let gains = [], losses = [];
             for (let i = 1; i < data.length; i++) {
-                const change = data[i].close - data[i - 1].close;
-                gains.push(change > 0 ? change : 0);
-                losses.push(change < 0 ? -change : 0);
+                const ch = data[i].close - data[i - 1].close;
+                gains.push(ch > 0 ? ch : 0);
+                losses.push(ch < 0 ? -ch : 0);
             }
-
             let rsi = [];
             for (let i = 0; i < data.length; i++) {
                 if (i < period) { rsi.push(50); continue; }
@@ -171,7 +158,6 @@
             return rsi;
         }
 
-        // គណនា ATR
         function calculateATR(data, period = 14) {
             let trs = [];
             for (let i = 1; i < data.length; i++) {
@@ -188,7 +174,6 @@
             return atr;
         }
 
-        // វិភាគសញ្ញា
         function analyzeSignal(data, ema, rsi, atr) {
             const last = data.length - 1;
             const price = data[last].close;
@@ -196,91 +181,76 @@
             const rsiVal = rsi[last];
             const atrVal = atr[last];
 
-            const buyCondition = price > emaVal && rsiVal > 50 && rsiVal < 70;
-            const sellCondition = price < emaVal && rsiVal < 50 && rsiVal > 30;
+            const buyOk = price > emaVal && rsiVal > 50 && rsiVal < 70;
+            const sellOk = price < emaVal && rsiVal < 50 && rsiVal > 30;
 
-            let signal, confidence, entry, sl, tp;
-
-            if (buyCondition) {
+            let signal, conf, entry, sl, tp;
+            if (buyOk) {
                 signal = 'BUY';
-                confidence = Math.round(65 + Math.random() * 20);
+                conf = Math.round(65 + Math.random() * 20);
                 entry = price.toFixed(2);
                 sl = (price - atrVal * 1.5).toFixed(2);
                 tp = (price + atrVal * 3).toFixed(2);
-            } else if (sellCondition) {
+            } else if (sellOk) {
                 signal = 'SELL';
-                confidence = Math.round(65 + Math.random() * 20);
+                conf = Math.round(65 + Math.random() * 20);
                 entry = price.toFixed(2);
                 sl = (price + atrVal * 1.5).toFixed(2);
                 tp = (price - atrVal * 3).toFixed(2);
             } else {
                 signal = 'NEUTRAL';
-                confidence = '—';
+                conf = '—';
                 entry = sl = tp = '—';
             }
-
-            return { signal, confidence, entry, sl, tp, price, atrVal };
+            return { signal, conf, entry, sl, tp, price };
         }
 
-        // បង្ហាញទិន្នន័យ
         function renderData() {
             priceData = generateSampleData();
             candleSeries.setData(priceData);
 
             const ema = calculateEMA(priceData, 20);
-            const emaData = priceData.map((d, i) => ({ time: d.time, value: ema[i] }));
-            emaSeries.setData(emaData);
+            emaSeries.setData(priceData.map((d, i) => ({ time: d.time, value: ema[i] })));
 
             const rsi = calculateRSI(priceData, 14);
             const atr = calculateATR(priceData, 14);
             const sig = analyzeSignal(priceData, ema, rsi, atr);
 
-            // បង្ហាញតម្លៃ
             document.getElementById('price').textContent = sig.price.toFixed(2);
             document.getElementById('price').classList.remove('loading');
-            const high = Math.max(...priceData.map(d => d.high)).toFixed(2);
-            const low = Math.min(...priceData.map(d => d.low)).toFixed(2);
-            document.getElementById('high-low').innerHTML = `${high} / ${low}`;
+            const highs = Math.max(...priceData.map(d => d.high)).toFixed(2);
+            const lows = Math.min(...priceData.map(d => d.low)).toFixed(2);
+            document.getElementById('high-low').innerHTML = `${highs} / ${lows}`;
 
-            // បង្ហាញសញ្ញា
-            document.getElementById('signal-name').textContent = 
-                sig.signal === 'BUY' ? 'ទិញ' : 
+            document.getElementById('signal-name').textContent =
+                sig.signal === 'BUY' ? 'ទិញ' :
                 sig.signal === 'SELL' ? 'លក់' : 'រង់ចាំ';
             document.getElementById('entry').textContent = sig.entry;
             document.getElementById('sl').textContent = sig.sl;
             document.getElementById('tp').textContent = sig.tp;
-            document.getElementById('confidence').textContent = 
-                sig.confidence !== '—' ? `កម្រិតទំនុកចិត្ត៖ ${sig.confidence}%` : '—';
+            document.getElementById('confidence').textContent =
+                sig.conf !== '—' ? `កម្រិតទំនុកចិត្ត៖ ${sig.conf}%` : '—';
 
-            // ពណ៌ប្រអប់សញ្ញា
             const box = document.getElementById('signal-box');
-            box.className = 'text-center p-6 rounded-xl mb-4 ' + 
-                (sig.signal === 'BUY' ? 'buy' : 
+            box.className = 'text-center p-6 rounded-xl ' +
+                (sig.signal === 'BUY' ? 'buy' :
                  sig.signal === 'SELL' ? 'sell' : 'neutral');
-            box.innerHTML = `
-                <p class="text-xl font-bold mb-2">
-                    ${sig.signal === 'BUY' ? '<i class="fa fa-arrow-up"></i> សញ្ញាទិញ' : 
-                      sig.signal === 'SELL' ? '<i class="fa fa-arrow-down"></i> សញ្ញាលក់' : 
-                      '<i class="fa fa-pause"></i> រង់ចាំសញ្ញា'}
-                </p>
-                <p class="text-sm opacity-80">
-                    ${sig.confidence !== '—' ? 'កម្រិតទំនុកចិត្ត៖ ' + sig.confidence + '%' : 'រង់ចាំលក្ខខណ្ឌសមស្រប'}
-                </p>
-            `;
+            box.innerHTML = sig.signal === 'BUY'
+                ? `<p class="text-xl font-bold mb-2"><i class="fa fa-arrow-up"></i> សញ្ញាទិញ</p><p class="text-sm">កម្រិតទំនុកចិត្ត៖ ${sig.conf}%</p>`
+                : sig.signal === 'SELL'
+                ? `<p class="text-xl font-bold mb-2"><i class="fa fa-arrow-down"></i> សញ្ញាលក់</p><p class="text-sm">កម្រិតទំនុកចិត្ត៖ ${sig.conf}%</p>`
+                : `<p class="text-xl font-bold mb-2"><i class="fa fa-pause"></i> រង់ចាំសញ្ញា</p><p class="text-sm">រង់ចាំលក្ខខណ្ឌសមស្រប</p>`;
         }
 
-        // ប៊ូតុងធ្វើបច្ចុប្បន្នភាព
         function refreshData() {
             document.getElementById('price').textContent = 'កំពុងផ្ទុក...';
             document.getElementById('price').classList.add('loading');
             setTimeout(renderData, 600);
         }
 
-        // ចាប់ផ្តើមដំណើរការ
         document.addEventListener('DOMContentLoaded', () => {
             initChart();
             renderData();
-            // ធ្វើបច្ចុប្បន្នភាពរាល់ ៣០ វិនាទី
             setInterval(renderData, 30000);
         });
     </script>
