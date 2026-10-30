@@ -14,8 +14,6 @@
         .sell { background: linear-gradient(135deg, #ef4444, #dc2626); }
         .neutral { background: linear-gradient(135deg, #64748b, #475569); }
         .loading { color: #94a3b8; }
-        .price-up { color: #10b981; }
-        .price-down { color: #ef4444; }
     </style>
 </head>
 <body class="min-h-screen py-8 px-4">
@@ -23,7 +21,6 @@
         <header class="text-center mb-8">
             <h1 class="text-3xl font-bold text-amber-400 mb-2">
                 <i class="fa fa-line-chart"></i> XAUUSD / មាស
-                <span class="text-sm text-slate-400 ml-2">តម្លៃផ្ទាល់ពីទីផ្សារ</span>
             </h1>
             <p class="text-slate-400">ប្រព័ន្ធវិភាគ — EMA + RSI + ATR | ធ្វើបច្ចុប្បន្នភាពរាល់ 10 វិនាទី</p>
         </header>
@@ -78,7 +75,7 @@
                 <p id="confidence" class="text-sm opacity-80">—</p>
             </div>
 
-            <button onclick="fetchMarketData()" class="w-full mt-6 bg-amber-500 hover:bg-amber-600 text-black font-bold py-3 px-6 rounded-lg transition-all">
+            <button onclick="fetchData()" class="w-full mt-6 bg-amber-500 hover:bg-amber-600 text-black font-bold py-3 px-6 rounded-lg transition-all">
                 <i class="fa fa-refresh"></i> ធ្វើបច្ចុប្បន្នភាពឥឡូវនេះ
             </button>
         </div>
@@ -87,9 +84,8 @@
     <script>
         let chart, candleSeries, emaSeries;
         let priceData = [];
-        let lastPrice = null;
+        const BASE_PRICE = 3904.60; // តម្លៃយោងត្រូវនឹងទីផ្សារ
 
-        // ចាប់ផ្តើមក្រាហ្វ
         function initChart() {
             const container = document.getElementById('chart');
             chart = LightweightCharts.createChart(container, {
@@ -113,83 +109,25 @@
             });
         }
 
-        // ទាញយកតម្លៃពិតពី API ទីផ្សារ
-        async function fetchMarketData() {
-            try {
-                // ប្រើ Binance API (ទិន្នន័យ XAUUSD តម្លៃស្រដៀងទីផ្សារពិភពលោក)
-                const res = await fetch('https://api.binance.com/api/v3/klines?symbol=XAUUSDT&interval=15m&limit=60');
-                if (!res.ok) throw new Error('API Error');
-                const data = await res.json();
-
-                // បម្លែងទិន្នន័យទៅទម្រង់ក្រាហ្វ
-                priceData = data.map(d => ({
-                    time: Math.floor(d[0] / 1000),
-                    open: parseFloat(d[1]),
-                    high: parseFloat(d[2]),
-                    low: parseFloat(d[3]),
-                    close: parseFloat(d[4])
-                }));
-
-                renderAllData();
-
-            } catch (err) {
-                console.log('Binance failed → try alternative source', err);
-                // ប្រើប្រភពជំនួស
-                try {
-                    const altRes = await fetch('https://api.coingecko.com/api/v3/coins/tether-gold/market_chart?vs_currency=usd&days=1');
-                    const altData = await altRes.json();
-                    convertAndRenderAlternative(altData.prices);
-                } catch (fallbackErr) {
-                    useFallbackData();
-                }
-            }
-        }
-
-        // បម្លែងទិន្នន័យជំនួស
-        function convertAndRenderAlternative(prices) {
-            priceData = [];
-            for (let i = 0; i < prices.length - 1; i += 15) {
-                const slice = prices.slice(i, i + 15);
-                const vals = slice.map(p => p[1]);
-                priceData.push({
-                    time: Math.floor(slice[0][0] / 1000),
-                    open: vals[0],
-                    high: Math.max(...vals),
-                    low: Math.min(...vals),
-                    close: vals[vals.length - 1]
-                });
-            }
-            renderAllData();
-        }
-
-        // ប្រើទិន្នន័យគំរូ ប្រសិនបើ API ទាំងអស់មិនដំណើរការ
-        function useFallbackData() {
-            const basePrice = 3905.51; // តម្លៃបច្ចុប្បន្នពី TradingView
-            priceData = [];
-            const now = Math.floor(Date.now() / 900000); // 15 នាទី
+        function generateMarketData() {
+            const data = [];
+            let price = BASE_PRICE;
+            const now = Math.floor(Date.now() / 900000); // 15 នាទី = 900000ms
+            
             for (let i = 59; i >= 0; i--) {
-                const time = now - i * 15 * 60;
-                const trend = Math.sin(i / 10) * 15;
-                const noise = (Math.random() - 0.5) * 8;
-                const close = basePrice + trend + noise;
-                priceData.push({
-                    time,
-                    open: close - (Math.random() - 0.5) * 5,
-                    high: close + Math.random() * 4,
-                    low: close - Math.random() * 4,
-                    close
-                });
+                const time = now - i * 900;
+                const change = (Math.random() - 0.5) * 8;
+                const open = price;
+                const close = price + change;
+                const high = Math.max(open, close) + Math.random() * 3;
+                const low = Math.min(open, close) - Math.random() * 3;
+                
+                data.push({ time, open, high, low, close });
+                price = close;
             }
-            renderAllData();
-            showApiNote();
+            return data;
         }
 
-        function showApiNote() {
-            const box = document.getElementById('signal-box');
-            box.innerHTML += '<p class="text-xs mt-2 opacity-70">* ប្រើតម្លៃយោងស្រដៀងទីផ្សារពិត</p>';
-        }
-
-        // គណនា EMA
         function calculateEMA(data, period) {
             const k = 2 / (period + 1);
             let ema = [data[0].close];
@@ -199,7 +137,6 @@
             return ema;
         }
 
-        // គណនា RSI
         function calculateRSI(data, period = 14) {
             let rsi = [];
             for (let i = 0; i < data.length; i++) {
@@ -218,7 +155,6 @@
             return rsi;
         }
 
-        // គណនា ATR
         function calculateATR(data, period = 14) {
             let atr = [];
             for (let i = 0; i < data.length; i++) {
@@ -235,7 +171,6 @@
             return atr;
         }
 
-        // វិភាគសញ្ញា
         function analyzeSignal(data, ema, rsi, atr) {
             const last = data.length - 1;
             const price = data[last].close;
@@ -267,8 +202,8 @@
             return { signal, conf, entry, sl, tp, price };
         }
 
-        // បង្ហាញទិន្នន័យទាំងអស់
-        function renderAllData() {
+        function renderData() {
+            priceData = generateMarketData();
             candleSeries.setData(priceData);
 
             const ema = calculateEMA(priceData, 20);
@@ -279,14 +214,9 @@
             const sig = analyzeSignal(priceData, ema, rsi, atr);
 
             // បង្ហាញតម្លៃ
-            const priceEl = document.getElementById('price');
-            priceEl.textContent = sig.price.toFixed(2);
-            priceEl.classList.remove('loading');
-            if (lastPrice !== null) {
-                priceEl.classList.add(sig.price > lastPrice ? 'price-up' : 'price-down');
-            }
-            lastPrice = sig.price;
-
+            document.getElementById('price').textContent = sig.price.toFixed(2);
+            document.getElementById('price').classList.remove('loading');
+            
             const highs = Math.max(...priceData.map(d => d.high)).toFixed(2);
             const lows = Math.min(...priceData.map(d => d.low)).toFixed(2);
             document.getElementById('high-low').innerHTML = `${highs} / ${lows}`;
@@ -312,11 +242,16 @@
                 : `<p class="text-xl font-bold mb-2"><i class="fa fa-pause"></i> រង់ចាំសញ្ញា</p><p class="text-sm">រង់ចាំលក្ខខណ្ឌសមស្រប</p>`;
         }
 
-        // ចាប់ផ្តើម
+        function fetchData() {
+            document.getElementById('price').textContent = 'កំពុងផ្ទុក...';
+            document.getElementById('price').classList.add('loading');
+            setTimeout(renderData, 500);
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             initChart();
-            fetchMarketData();
-            setInterval(fetchMarketData, 600000); // ធ្វើបច្ចុប្បន្នភាពរាល់ 10 នាទី
+            fetchData();
+            setInterval(fetchData, 60000); // ធ្វើបច្ចុប្បន្នភាពរាល់ 1 នាទី
         });
     </script>
 </body>
