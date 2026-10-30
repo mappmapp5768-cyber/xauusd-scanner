@@ -31,7 +31,7 @@
             <div class="flex justify-center items-center gap-4 mt-2 text-sm">
                 <span class="flex items-center"><span class="live-dot"></span><span id="status">Market Live — Running</span></span>
                 <span class="bg-slate-700 px-3 py-1 rounded">
-                    <i class="fa fa-clock-o"></i> Phnom Penh Time: <span id="clock">--:--:--</span>
+                    <i class="fa fa-clock-o"></i> Ho Chi Minh Time: <span id="clock">--:--:--</span>
                 </span>
             </div>
         </header>
@@ -145,35 +145,56 @@
         let currentTF = 15;
         const BASE_PRICE = 3895.96;
 
-        // --- LIVE CLOCK ---
+        // --- LIVE CLOCK — Ho Chi Minh Time ---
         function updateClock() {
             const now = new Date();
             document.getElementById('clock').textContent = 
-                now.toLocaleTimeString('en-GB', { timeZone:'Asia/Bangkok', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
+                now.toLocaleTimeString('en-GB', { 
+                    timeZone: 'Asia/Ho_Chi_Minh', 
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    second: '2-digit', 
+                    hour12: false 
+                });
         }
         setInterval(updateClock, 1000);
         updateClock();
+
+        // --- TIMEFRAME BUTTONS ---
+        document.querySelectorAll('.timeframe-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.timeframe-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentTF = parseInt(btn.dataset.tf);
+                runFullAnalysis();
+            });
+        });
 
         // --- INIT CHART ---
         function initChart() {
             const container = document.getElementById('chart');
             chart = LightweightCharts.createChart(container, {
-                layout: { background:{color:'#0f172a'}, textColor:'#cbd5e1' },
-                grid: { vertLines:{color:'#1e293b'}, horzLines:{color:'#1e293b'} },
+                layout: { background: { color: '#0f172a' }, textColor: '#cbd5e1' },
+                grid: { vertLines: { color: '#1e293b' }, horzLines: { color: '#1e293b' } },
                 crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-                rightPriceScale: { borderColor:'#334155' },
+                rightPriceScale: { borderColor: '#334155' },
                 timeScale: { 
-                    borderColor:'#334155', 
-                    timeVisible:true,
-                    tickMarkFormatter: t => new Date(t*1000).toLocaleTimeString('en-GB',{timeZone:'Asia/Bangkok', hour:'2-digit', minute:'2-digit', hour12:false})
+                    borderColor: '#334155', 
+                    timeVisible: true,
+                    tickMarkFormatter: t => new Date(t * 1000).toLocaleTimeString('en-GB', {
+                        timeZone: 'Asia/Ho_Chi_Minh',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false
+                    })
                 }
             });
             candleSeries = chart.addCandlestickSeries({
-                upColor:'#10b981', downColor:'#ef4444', 
-                borderUpColor:'#10b981', borderDownColor:'#ef4444',
-                wickUpColor:'#10b981', wickDownColor:'#ef4444'
+                upColor: '#10b981', downColor: '#ef4444', 
+                borderUpColor: '#10b981', borderDownColor: '#ef4444',
+                wickUpColor: '#10b981', wickDownColor: '#ef4444'
             });
-            window.addEventListener('resize', () => chart.applyOptions({width: container.clientWidth}));
+            window.addEventListener('resize', () => chart.applyOptions({ width: container.clientWidth }));
         }
 
         // --- GENERATE MARKET DATA ---
@@ -201,12 +222,12 @@
         function findFVGs(data) {
             const fvgs = [];
             for (let i = 2; i < data.length; i++) {
-                const curr = data[i], p2 = data[i-2];
+                const curr = data[i], p1 = data[i-1], p2 = data[i-2];
                 if (curr.low > p2.high) {
-                    fvgs.push({ type:'BUY', top:curr.low, bottom:p2.high });
+                    fvgs.push({ type: 'BUY', top: curr.low, bottom: p2.high });
                 }
                 if (curr.high < p2.low) {
-                    fvgs.push({ type:'SELL', top:p2.low, bottom:curr.high });
+                    fvgs.push({ type: 'SELL', top: p2.low, bottom: curr.high });
                 }
             }
             return fvgs.slice(-4);
@@ -218,10 +239,10 @@
             for (let i = 1; i < data.length - 1; i++) {
                 const curr = data[i], next = data[i+1];
                 if (curr.close < curr.open && next.close > next.open && (next.close - curr.high) > 1.5) {
-                    obs.push({ type:'BUY', level:curr.high });
+                    obs.push({ type: 'BUY', level: curr.high });
                 }
                 if (curr.close > curr.open && next.close < next.open && (curr.low - next.close) > 1.5) {
-                    obs.push({ type:'SELL', level:curr.low });
+                    obs.push({ type: 'SELL', level: curr.low });
                 }
             }
             return obs.slice(-3);
@@ -232,8 +253,8 @@
             const highs = data.slice(-20).map(d => d.high);
             const lows = data.slice(-20).map(d => d.low);
             return {
-                res: [...new Set(highs.sort((a,b) => b - a).slice(0,3).map(x => x.toFixed(2)))].map(parseFloat),
-                sup: [...new Set(lows.sort((a,b) => a - b).slice(0,3).map(x => x.toFixed(2)))].map(parseFloat)
+                res: [...new Set(highs.sort((a, b) => b - a).slice(0, 3).map(x => x.toFixed(2)))].map(parseFloat),
+                sup: [...new Set(lows.sort((a, b) => a - b).slice(0, 3).map(x => x.toFixed(2)))].map(parseFloat)
             };
         }
 
@@ -287,15 +308,4 @@
             document.getElementById('sr-levels').innerHTML = `Resistance: ${sr.res[0] || '—'} / Support: ${sr.sup[0] || '—'}`;
 
             // Signal logic
-            let signal = 'NEUTRAL', conf = 0, reason = 'Waiting for confluence';
-            let entry = currPrice.toFixed(2), sl = '—', tp = '—';
-
-            const buyFVG = fvgs.some(f => f.type==='BUY' && currPrice >= f.bottom && currPrice <= f.top);
-            const sellFVG = fvgs.some(f => f.type==='SELL' && currPrice >= f.bottom && currPrice <= f.top);
-            const buyOB = obs.some(o => o.type==='BUY' && Math.abs(currPrice - o.level) < 3);
-            const sellOB = obs.some(o => o.type==='SELL' && Math.abs(currPrice - o.level) < 3);
-
-            // BUY signal
-            if (zone === 'DISCOUNT' && (buyFVG || buyOB)) {
-                signal = 'BUY';
-                conf = 60 + (buyFVG ? 15 :
+            let signal = 'NEUTRAL',
