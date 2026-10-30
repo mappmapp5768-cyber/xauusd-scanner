@@ -138,19 +138,14 @@
         let currentTF = 15;
         const BASE_PRICE = 3895.96;
 
-        // === CLOCK ===
         function updateClock() {
             const now = new Date();
             document.getElementById('clock').textContent = 
-                now.toLocaleTimeString('en-GB', { 
-                    timeZone: 'Asia/Ho_Chi_Minh', 
-                    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false 
-                });
+                now.toLocaleTimeString('en-GB', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
         }
         setInterval(updateClock, 1000);
         updateClock();
 
-        // === TIMEFRAME BUTTONS ===
         document.querySelectorAll('.timeframe-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.timeframe-btn').forEach(b => b.classList.remove('active'));
@@ -160,7 +155,6 @@
             });
         });
 
-        // === INITIALIZE CHART ===
         function initChart() {
             const container = document.getElementById('chart');
             chart = LightweightCharts.createChart(container, {
@@ -168,24 +162,17 @@
                 grid: { vertLines: { color: '#1e293b' }, horzLines: { color: '#1e293b' } },
                 crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
                 rightPriceScale: { borderColor: '#334155' },
-                timeScale: { 
-                    borderColor: '#334155', 
-                    timeVisible: true,
+                timeScale: { borderColor: '#334155', timeVisible: true,
                     tickMarkFormatter: t => new Date(t * 1000).toLocaleTimeString('en-GB', {
-                        timeZone: 'Asia/Ho_Chi_Minh',
-                        hour: '2-digit', minute: '2-digit', hour12: false
-                    })
-                }
+                        timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: false }) }
             });
             candleSeries = chart.addCandlestickSeries({
-                upColor: '#10b981', downColor: '#ef4444', 
-                borderUpColor: '#10b981', borderDownColor: '#ef4444',
-                wickUpColor: '#10b981', wickDownColor: '#ef4444'
+                upColor: '#10b981', downColor: '#ef4444', borderUpColor: '#10b981',
+                borderDownColor: '#ef4444', wickUpColor: '#10b981', wickDownColor: '#ef4444'
             });
             window.addEventListener('resize', () => chart.applyOptions({ width: container.clientWidth }));
         }
 
-        // === GENERATE DATA ===
         function genData(tfMin) {
             const data = [];
             let price = BASE_PRICE + (Math.random() - 0.5) * 12;
@@ -205,7 +192,6 @@
             return data;
         }
 
-        // === FVG DETECTION ===
         function findFVGs(data) {
             const fvgs = [];
             for (let i = 2; i < data.length; i++) {
@@ -216,7 +202,6 @@
             return fvgs.slice(-4);
         }
 
-        // === ORDER BLOCK DETECTION ===
         function findOBs(data) {
             const obs = [];
             for (let i = 1; i < data.length - 1; i++) {
@@ -229,7 +214,6 @@
             return obs.slice(-3);
         }
 
-        // === SUPPORT / RESISTANCE ===
         function findSR(data) {
             const highs = data.slice(-20).map(d => d.high);
             const lows = data.slice(-20).map(d => d.low);
@@ -239,7 +223,6 @@
             };
         }
 
-        // === PREMIUM/DISCOUNT ZONE ===
         function getZone(data) {
             const high = Math.max(...data.map(d => d.high));
             const low = Math.min(...data.map(d => d.low));
@@ -251,12 +234,10 @@
             return 'EQUILIBRIUM';
         }
 
-        // === FULL ANALYSIS ===
         function runFullAnalysis() {
             document.getElementById('status').textContent = 'Updating...';
             priceData = genData(currentTF);
             candleSeries.setData(priceData);
-            
             const fvgs = findFVGs(priceData);
             const obs = findOBs(priceData);
             const sr = findSR(priceData);
@@ -292,4 +273,11 @@
 
             if (zone === 'DISCOUNT' && (buyFVG || buyOB)) {
                 signal = 'BUY';
-                conf = 60 + (buyFVG ? 15 : 0) + (buyOB ? 
+                conf = 60 + (buyFVG ? 15 : 0) + (buyOB ? 15 : 0);
+                reason = 'Discount Zone + ' + (buyFVG ? 'Buy FVG ' : '') + (buyOB ? 'Buy Order Block' : '');
+                entry = currPrice.toFixed(2);
+                sl = (sr.sup[0] || currPrice - 5).toFixed(2);
+                tp = (sr.res[0] || currPrice + 8).toFixed(2);
+            } else if (zone === 'PREMIUM' && (sellFVG || sellOB)) {
+                signal = 'SELL';
+                conf = 60 + (
