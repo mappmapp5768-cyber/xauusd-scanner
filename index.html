@@ -3,332 +3,287 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>XAUUSD Scanner — ដូច TradingView</title>
+    <title>XAUUSD — ICT + CRT Analyzer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <style>
-        body { background: #131722; color: #d1d5db; font-family: 'Segoe UI', sans-serif; }
-        .card { background: #1e222d; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
-        .buy { background: linear-gradient(135deg, #089981, #067d6a); }
-        .sell { background: linear-gradient(135deg, #f23645, #d32f3b); }
-        .neutral { background: #2a2e39; }
-        .time-badge { font-family: monospace; background: #2a2e39; padding: 4px 10px; border-radius: 4px; }
-        .live-dot { display: inline-block; width: 10px; height: 10px; background: #089981; border-radius: 50%; margin-right: 6px; animation: blink 1s infinite; }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-        .timeframe-btn { padding: 6px 12px; border-radius: 4px; border: none; cursor: pointer; }
-        .timeframe-btn.active { background: #2962ff; color: white; }
-        .timeframe-btn:not(.active) { background: #2a2e39; color: #96989c; }
+        body { background: #0f172a; color: #e2e8f0; font-family: 'Segoe UI', sans-serif; }
+        .card { background: #1e293b; border-radius: 10px; padding: 18px; margin-bottom: 16px; }
+        .buy { background: linear-gradient(135deg, #10b981, #059669); }
+        .sell { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .neutral { background: #334155; }
+        .premium { border-left: 3px solid #f59e0b; }
+        .discount { border-left: 3px solid #10b981; }
+        .fvg-box { border: 1px dashed #a855f7; background: rgba(168,85,247,0.1); }
+        .ob-buy { border: 2px solid #10b981; background: rgba(16,185,129,0.15); }
+        .ob-sell { border: 2px solid #ef4444; background: rgba(239,68,68,0.15); }
+        .timeframe-btn { padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; margin: 2px; }
+        .timeframe-btn.active { background: #3b82f6; color: white; box-shadow: 0 0 0 2px rgba(59,130,246,0.4); }
+        .timeframe-btn:not(.active) { background: #334155; color: #94a3b8; }
+        .live-dot { width: 10px; height: 10px; background: #10b981; border-radius: 50%; display: inline-block; margin-right: 6px; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% {opacity:1;} 50% {opacity:0.3;} 100% {opacity:1;} }
+        .label-tag { font-size: 11px; padding: 2px 6px; border-radius: 4px; display: inline-block; margin: 2px; }
     </style>
 </head>
-<body class="min-h-screen py-4 px-2">
+<body class="min-h-screen py-4 px-3">
     <div class="max-w-7xl mx-auto">
-        <!-- ក្បាលទំព័រ + ម៉ោងផ្ទាល់ -->
+        <!-- ក្បាល -->
         <header class="text-center mb-4">
             <h1 class="text-2xl font-bold text-amber-400 mb-2">
-                <i class="fa fa-area-chart"></i> XAUUSD / មាស
-                <span class="text-base text-slate-400 ml-2">Spot / USD</span>
+                <i class="fa fa-bolt"></i> XAUUSD — ICT + CRT Scanner
             </h1>
-            <div class="flex justify-center items-center gap-4 text-sm">
-                <span class="flex items-center">
-                    <span class="live-dot"></span>
-                    <span id="status">កំពុងផ្ទុក...</span>
-                </span>
-                <span class="time-badge">
-                    <i class="fa fa-clock-o"></i> ម៉ោងភ្នំពេញ៖ <span id="clock">00:00:00</span>
+            <p class="text-slate-400 text-sm">FVG · Order Block · Liquidity · Premium/Discount · S/R</p>
+            <div class="flex justify-center items-center gap-4 mt-2 text-sm">
+                <span class="flex items-center"><span class="live-dot"></span><span id="status">កំពុងផ្ទុក...</span></span>
+                <span class="bg-slate-700 px-3 py-1 rounded">
+                    <i class="fa fa-clock-o"></i> ម៉ោងភ្នំពេញ៖ <span id="clock">--:--:--</span>
                 </span>
             </div>
         </header>
 
-        <!-- ជ្រើសរើសពេលវេលាក្រាហ្វ -->
-        <div class="flex justify-center gap-2 mb-4">
-            <button class="timeframe-btn active" data-tf="1">M1</button>
+        <!-- ជ្រើសរើសពេលវេលា -->
+        <div class="flex justify-center flex-wrap mb-4">
+            <button class="timeframe-btn" data-tf="1">M1</button>
             <button class="timeframe-btn" data-tf="5">M5</button>
-            <button class="timeframe-btn" data-tf="15">M15</button>
+            <button class="timeframe-btn active" data-tf="15">M15</button>
             <button class="timeframe-btn" data-tf="60">H1</button>
             <button class="timeframe-btn" data-tf="240">H4</button>
         </div>
 
-        <!-- ផ្ទាំងព័ត៌មានតម្លៃ -->
-        <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+        <!-- ផ្ទាំងទិន្នន័យសំខាន់ៗ -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
             <div class="card text-center">
-                <p class="text-xs text-slate-400 mb-1">តម្លៃបច្ចុប្បន្ន</p>
+                <p class="text-xs text-slate-400">តម្លៃបច្ចុប្បន្ន</p>
                 <p id="price" class="text-xl font-bold text-amber-300">—</p>
             </div>
             <div class="card text-center">
-                <p class="text-xs text-slate-400 mb-1">ផ្លាស់ប្តូរ</p>
-                <p id="change" class="text-lg font-bold">—</p>
+                <p class="text-xs text-slate-400">តំបន់ ICT</p>
+                <p id="zone-type" class="text-lg font-bold">—</p>
             </div>
             <div class="card text-center">
-                <p class="text-xs text-slate-400 mb-1">ខ្ពស់</p>
-                <p id="high" class="text-lg text-green-400">—</p>
+                <p class="text-xs text-slate-400">FVG សកម្ម</p>
+                <p id="fvg-count" class="text-lg font-bold text-purple-400">—</p>
             </div>
             <div class="card text-center">
-                <p class="text-xs text-slate-400 mb-1">ទាប</p>
-                <p id="low" class="text-lg text-red-400">—</p>
-            </div>
-            <div class="card text-center">
-                <p class="text-xs text-slate-400 mb-1">សញ្ញា</p>
-                <p id="signal-name" class="text-lg font-bold">—</p>
+                <p class="text-xs text-slate-400">សញ្ញា CRT</p>
+                <p id="signal-type" class="text-lg font-bold">—</p>
             </div>
         </div>
 
         <!-- ក្រាហ្វ -->
         <div class="card mb-4">
-            <div id="chart" style="width: 100%; height: 480px;"></div>
+            <div id="chart" style="width: 100%; height: 450px;"></div>
         </div>
 
-        <!-- ការណែនាំជួញដូរ -->
+        <!-- ការវិភាគ ICT លម្អិត -->
+        <div class="card mb-4">
+            <h3 class="text-lg font-semibold mb-3 text-purple-400">
+                <i class="fa fa-sitemap"></i> ការវិភាគ ICT (Inner Circle Trader)
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Fair Value Gaps -->
+                <div class="fvg-box p-4 rounded-lg">
+                    <h4 class="font-semibold text-purple-300 mb-2">Fair Value Gap (FVG / Imbalance)</h4>
+                    <div id="fvg-list">
+                        <p class="text-slate-400 text-sm">កំពុងស្វែងរក...</p>
+                    </div>
+                </div>
+                <!-- Order Blocks -->
+                <div class="p-4 rounded-lg bg-slate-700/40">
+                    <h4 class="font-semibold text-amber-300 mb-2">Order Block & Liquidity</h4>
+                    <div id="ob-list">
+                        <p class="text-slate-400 text-sm">កំពុងស្វែងរក...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CRT Confluence Zones -->
+        <div class="card mb-4">
+            <h3 class="text-lg font-semibold mb-3 text-blue-400">
+                <i class="fa fa-crosshairs"></i> CRT — Confluence Reaction Zones
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="p-4 rounded-lg bg-slate-700/40">
+                    <p class="text-xs text-slate-400 mb-1">Premium / Discount</p>
+                    <p id="pd-zone" class="text-lg font-bold">—</p>
+                    <p id="range-info" class="text-xs text-slate-400 mt-1">ជួរតម្លៃ៖ —</p>
+                </div>
+                <div class="p-4 rounded-lg bg-slate-700/40">
+                    <p class="text-xs text-slate-400 mb-1">Support / Resistance</p>
+                    <p id="sr-levels" class="text-lg font-bold">—</p>
+                    <p id="sr-detail" class="text-xs text-slate-400 mt-1">—</p>
+                </div>
+                <div class="p-4 rounded-lg bg-slate-700/40">
+                    <p class="text-xs text-slate-400 mb-1">កម្រិតទំនុកចិត្ត</p>
+                    <p id="conf-score" class="text-lg font-bold">—</p>
+                    <p id="conf-reason" class="text-xs text-slate-400 mt-1">—</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- កម្រិតជួញដូរ -->
         <div class="card">
-            <h2 class="text-lg font-semibold mb-4 text-center">
-                <i class="fa fa-bullseye"></i> កម្រិតជួញដូរ
-            </h2>
+            <h3 class="text-lg font-semibold mb-3 text-center">
+                <i class="fa fa-bullseye"></i> ផែនការជួញដូរ
+            </h3>
             <div class="grid grid-cols-3 gap-4 mb-4">
                 <div class="text-center p-4 rounded-lg border-2 border-blue-500/50">
                     <p class="text-xs text-slate-400 mb-1">Entry</p>
-                    <p id="entry" class="text-lg font-bold">—</p>
+                    <p id="final-entry" class="text-lg font-bold">—</p>
                 </div>
                 <div class="text-center p-4 rounded-lg border-2 border-red-500/50">
                     <p class="text-xs text-slate-400 mb-1">Stop Loss</p>
-                    <p id="sl" class="text-lg font-bold text-red-400">—</p>
+                    <p id="final-sl" class="text-lg font-bold text-red-400">—</p>
                 </div>
                 <div class="text-center p-4 rounded-lg border-2 border-green-500/50">
                     <p class="text-xs text-slate-400 mb-1">Take Profit</p>
-                    <p id="tp" class="text-lg font-bold text-green-400">—</p>
+                    <p id="final-tp" class="text-lg font-bold text-green-400">—</p>
                 </div>
             </div>
 
-            <div id="signal-box" class="text-center p-5 rounded-lg neutral mb-4">
-                <p class="text-lg font-semibold mb-1">កំពុងផ្ទុកទិន្នន័យ...</p>
-                <p id="confidence" class="text-sm text-slate-400">—</p>
+            <div id="trade-plan-box" class="text-center p-5 rounded-lg neutral mb-4">
+                <p class="text-lg font-semibold mb-1">កំពុងវិភាគ...</p>
+                <p id="trade-reason" class="text-sm text-slate-300">—</p>
             </div>
 
-            <button onclick="refreshAll()" class="w-full bg-amber-500 hover:bg-amber-600 text-black font-bold py-3 rounded-lg transition-all">
-                <i class="fa fa-refresh"></i> ធ្វើបច្ចុប្បន្នភាពឥឡូវនេះ
+            <button onclick="runFullAnalysis()" class="w-full bg-amber-500 hover:bg-amber-600 text-black font-bold py-3 rounded-lg transition-all">
+                <i class="fa fa-refresh"></i> ធ្វើបច្ចុប្បន្នភាព & វិភាគ ICT+CRT
             </button>
         </div>
     </div>
 
     <script>
-        let chart, candleSeries, ema20Series, ema50Series;
+        let chart, candleSeries;
         let priceData = [];
-        let currentTimeframe = 1; // M1 លំនាំដើម
-        const BASE_REAL_PRICE = 3904.60; // តម្លៃយោងពី TradingView
+        let currentTF = 15;
+        const BASE_PRICE = 3904.60; // តម្លៃយោង XAUUSD
 
-        // បង្ហាញនាឡិកាពិត (ម៉ោងភ្នំពេញ UTC+7)
+        // នាឡិកា
         function updateClock() {
             const now = new Date();
-            const options = { 
-                timeZone: 'Asia/Bangkok',
-                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false 
-            };
-            document.getElementById('clock').textContent = now.toLocaleTimeString('en-GB', options);
+            document.getElementById('clock').textContent = 
+                now.toLocaleTimeString('en-GB', { timeZone:'Asia/Bangkok', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
         }
-        setInterval(updateClock, 1000);
-        updateClock();
+        setInterval(updateClock, 1000); updateClock();
 
         // ចាប់ផ្តើមក្រាហ្វ
         function initChart() {
-            const container = document.getElementById('chart');
-            chart = LightweightCharts.createChart(container, {
-                layout: { 
-                    background: { color: '#131722' }, 
-                    textColor: '#d1d5db',
-                    fontSize: 12
-                },
-                grid: { 
-                    vertLines: { color: '#252836' }, 
-                    horzLines: { color: '#252836' } 
-                },
+            const c = document.getElementById('chart');
+            chart = LightweightCharts.createChart(c, {
+                layout: { background:{color:'#0f172a'}, textColor:'#cbd5e1' },
+                grid: { vertLines:{color:'#1e293b'}, horzLines:{color:'#1e293b'} },
                 crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-                rightPriceScale: { 
-                    borderColor: '#363c4e',
-                    scaleMargins: { top: 0.1, bottom: 0.2 }
-                },
-                timeScale: { 
-                    borderColor: '#363c4e', 
-                    timeVisible: true,
-                    secondsVisible: false,
-                    tickMarkFormatter: (time) => {
-                        const d = new Date(time * 1000);
-                        return d.toLocaleTimeString('en-GB', { 
-                            timeZone: 'Asia/Bangkok',
-                            hour: '2-digit', minute: '2-digit', hour12: false 
-                        });
-                    }
+                rightPriceScale: { borderColor:'#334155' },
+                timeScale: { borderColor:'#334155', timeVisible:true,
+                    tickMarkFormatter: t => new Date(t*1000).toLocaleTimeString('en-GB',{timeZone:'Asia/Bangkok', hour:'2-digit', minute:'2-digit', hour12:false})
                 }
             });
-
             candleSeries = chart.addCandlestickSeries({
-                upColor: '#089981', 
-                downColor: '#f23645',
-                borderUpColor: '#089981', 
-                borderDownColor: '#f23645',
-                wickUpColor: '#089981', 
-                wickDownColor: '#f23645'
+                upColor:'#10b981', downColor:'#ef4444', borderUpColor:'#10b981', borderDownColor:'#ef4444',
+                wickUpColor:'#10b981', wickDownColor:'#ef4444'
             });
-
-            ema20Series = chart.addLineSeries({ 
-                color: '#ff9800', 
-                lineWidth: 2, 
-                priceLineVisible: false,
-                lastValueVisible: false
-            });
-
-            ema50Series = chart.addLineSeries({ 
-                color: '#2962ff', 
-                lineWidth: 1.5, 
-                priceLineVisible: false,
-                lastValueVisible: false
-            });
-
-            window.addEventListener('resize', () => {
-                chart.applyOptions({ width: container.clientWidth });
-            });
+            window.addEventListener('resize', () => chart.applyOptions({width:c.clientWidth}));
         }
 
-        // បង្កើតទិន្នន័យតម្លៃផ្លាស់ទីតាមពេលវេលា
-        function generateData(timeframeMinutes) {
-            const data = [];
-            let price = BASE_REAL_PRICE + (Math.random() - 0.5) * 5;
-            const now = Math.floor(Date.now() / 1000);
-            const interval = timeframeMinutes * 60;
-            
-            for (let i = 99; i >= 0; i--) {
-                const time = now - i * interval;
-                const volatility = 1.2 + Math.random() * 2;
-                const change = (Math.random() - 0.5) * volatility;
-                
-                const open = price;
-                const close = price + change;
-                const high = Math.max(open, close) + Math.random() * volatility * 0.5;
-                const low = Math.min(open, close) - Math.random() * volatility * 0.5;
-                
-                data.push({ time, open, high, low, close });
-                price = close;
+        // បង្កើតទិន្នន័យតម្លៃស្រដៀងទីផ្សារ
+        function genData(tfMin) {
+            const d = [];
+            let p = BASE_PRICE + (Math.random()-0.5)*12;
+            const now = Math.floor(Date.now()/1000);
+            const int = tfMin * 60;
+            for(let i=99; i>=0; i--) {
+                const t = now - i*int;
+                const vol = 1.5 + Math.random()*2.5;
+                const ch = (Math.random()-0.5)*vol;
+                const o = p, c = p+ch;
+                d.push({ time:t, open:o, high:Math.max(o,c)+Math.random()*vol*0.6, low:Math.min(o,c)-Math.random()*vol*0.6, close:c });
+                p = c;
             }
-            return data;
+            return d;
         }
 
-        // គណនា EMA
-        function calculateEMA(data, period) {
-            const k = 2 / (period + 1);
-            let ema = [data[0].close];
-            for (let i = 1; i < data.length; i++) {
-                ema.push(data[i].close * k + ema[i - 1] * (1 - k));
-            }
-            return ema;
-        }
-
-        // គណនា RSI
-        function calculateRSI(data, period = 14) {
-            let rsi = [];
-            for (let i = 0; i < data.length; i++) {
-                if (i < period) { rsi.push(50); continue; }
-                let gains = 0, losses = 0;
-                for (let j = i - period + 1; j <= i; j++) {
-                    const ch = data[j].close - data[j - 1].close;
-                    if (ch > 0) gains += ch;
-                    else losses -= ch;
+        // ==========================================
+        // ICT ANALYSIS — FVG · ORDER BLOCK · LIQUIDITY
+        // ==========================================
+        
+        // រក Fair Value Gap (Imbalance)
+        function findFVGs(data) {
+            const fvgs = [];
+            for(let i=2; i<data.length; i++) {
+                const curr = data[i], prev1 = data[i-1], prev2 = data[i-2];
+                // Bullish FVG: ជើងទី ៣ លោតឡើង ខ្ពស់ជាងកំពូលជើងទី ១
+                if(curr.low > prev2.high) {
+                    fvgs.push({ type:'BULLISH', top:curr.low, bottom:prev2.high, mid:(curr.low+prev2.high)/2, time:curr.time, age:data.length-i });
                 }
-                const avgGain = gains / period;
-                const avgLoss = losses / period;
-                const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
-                rsi.push(100 - (100 / (1 + rs)));
-            }
-            return rsi;
-        }
-
-        // គណនា ATR
-        function calculateATR(data, period = 14) {
-            let atr = [];
-            for (let i = 0; i < data.length; i++) {
-                if (i < period) { atr.push(2.5); continue; }
-                let sum = 0;
-                for (let j = i - period + 1; j <= i; j++) {
-                    const hl = data[j].high - data[j].low;
-                    const hc = Math.abs(data[j].high - data[j - 1].close);
-                    const lc = Math.abs(data[j].low - data[j - 1].close);
-                    sum += Math.max(hl, hc, lc);
+                // Bearish FVG: ជើងទី ៣ លោតចុះ ទាបជាងបាតជើងទី ១
+                if(curr.high < prev2.low) {
+                    fvgs.push({ type:'BEARISH', top:prev2.low, bottom:curr.high, mid:(prev2.low+curr.high)/2, time:curr.time, age:data.length-i });
                 }
-                atr.push(sum / period);
             }
-            return atr;
+            return fvgs.slice(-6); // យក ៦ ចុងក្រោយ
         }
 
-        // វិភាគសញ្ញា
-        function analyzeSignal(data, ema20, ema50, rsi, atr) {
-            const last = data.length - 1;
-            const price = data[last].close;
-            const ema20Val = ema20[last];
-            const ema50Val = ema50[last];
-            const rsiVal = rsi[last];
-            const atrVal = atr[last];
-
-            const buyOk = price > ema20Val && ema20Val > ema50Val && rsiVal > 50 && rsiVal < 70;
-            const sellOk = price < ema20Val && ema20Val < ema50Val && rsiVal < 50 && rsiVal > 30;
-
-            let signal, conf, entry, sl, tp;
-            if (buyOk) {
-                signal = 'BUY';
-                conf = Math.round(70 + Math.random() * 15);
-                entry = price.toFixed(2);
-                sl = (price - atrVal * 1.5).toFixed(2);
-                tp = (price + atrVal * 3).toFixed(2);
-            } else if (sellOk) {
-                signal = 'SELL';
-                conf = Math.round(70 + Math.random() * 15);
-                entry = price.toFixed(2);
-                sl = (price + atrVal * 1.5).toFixed(2);
-                tp = (price - atrVal * 3).toFixed(2);
-            } else {
-                signal = 'NEUTRAL';
-                conf = '—';
-                entry = sl = tp = '—';
+        // រក Order Block
+        function findOrderBlocks(data) {
+            const obs = [];
+            for(let i=1; i<data.length-1; i++) {
+                const curr = data[i], next = data[i+1];
+                // Bullish OB: ជើងក្រហម មុនពេលឡើងខ្លាំង
+                if(curr.close < curr.open && next.close > next.open && (next.close - curr.high) > 1.2) {
+                    obs.push({ type:'BUY', high:curr.high, low:curr.low, base:curr.close, time:curr.time });
+                }
+                // Bearish OB: ជើងបៃតង មុនពេលចុះខ្លាំង
+                if(curr.close > curr.open && next.close < next.open && (curr.low - next.close) > 1.2) {
+                    obs.push({ type:'SELL', high:curr.high, low:curr.low, base:curr.close, time:curr.time });
+                }
             }
-            return { signal, conf, entry, sl, tp, price };
+            return obs.slice(-4);
         }
 
-        // បង្ហាញទិន្នន័យទាំងអស់
-        function renderAll() {
-            priceData = generateData(currentTimeframe);
-            candleSeries.setData(priceData);
+        // រកកម្រិតទ្រទ្រង់/ទប់ទល់
+        function findSupportResistance(data) {
+            const highs = data.map(d => d.high);
+            const lows = data.map(d => d.low);
+            const recentHighs = highs.slice(-20).sort((a,b)=>b-a).slice(0,3);
+            const recentLows = lows.slice(-20).sort((a,b)=>a-b).slice(0,3);
+            return {
+                resistance: [...new Set(recentHighs.map(x=>x.toFixed(2)))].map(parseFloat),
+                support: [...new Set(recentLows.map(x=>x.toFixed(2)))].map(parseFloat)
+            };
+        }
 
-            const ema20 = calculateEMA(priceData, 20);
-            const ema50 = calculateEMA(priceData, 50);
-            ema20Series.setData(priceData.map((d, i) => ({ time: d.time, value: ema20[i] })));
-            ema50Series.setData(priceData.map((d, i) => ({ time: d.time, value: ema50[i] })));
+        // គណនាតំបន់ Premium / Discount
+        function getPremiumDiscountZone(data) {
+            const high = Math.max(...data.map(d=>d.high));
+            const low = Math.min(...data.map(d=>d.low));
+            const range = high - low;
+            const mid = (high + low)/2;
+            const curr = data[data.length-1].close;
+            return {
+                zone: curr > mid + range*0.1 ? 'PREMIUM' : curr < mid - range*0.1 ? 'DISCOUNT' : 'EQUILIBRIUM',
+                high, low, mid, curr
+            };
+        }
 
-            const rsi = calculateRSI(priceData, 14);
-            const atr = calculateATR(priceData, 14);
-            const sig = analyzeSignal(priceData, ema20, ema50, rsi, atr);
+        // ==========================================
+        // CRT — Confluence & Reaction Trading
+        // ==========================================
+        function analyzeCRT(data, fvgs, obs, sr, pdZone) {
+            const curr = data[data.length-1].close;
+            let buyScore = 0, sellScore = 0;
+            let reasons = { buy:[], sell:[] };
 
-            // ស្ថានភាព
-            const now = new Date();
-            document.getElementById('status').textContent = 
-                `បានធ្វើបច្ចុប្បន្នភាពនៅ ${now.toLocaleTimeString('en-GB', {timeZone:'Asia/Bangkok', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false})}`;
+            // 1. តំបន់តម្លៃ
+            if(pdZone.zone === 'DISCOUNT') { buyScore += 25; reasons.buy.push('តម្លៃនៅតំបន់បញ្ចុះតម្លៃ'); }
+            if(pdZone.zone === 'PREMIUM') { sellScore += 25; reasons.sell.push('តម្លៃនៅតំបន់ប្រាក់កម្ចី'); }
 
-            // តម្លៃ
-            document.getElementById('price').textContent = sig.price.toFixed(2);
-            
-            const firstPrice = priceData[0].close;
-            const changeVal = sig.price - firstPrice;
-            document.getElementById('change').textContent = 
-                (changeVal >= 0 ? '+' : '') + changeVal.toFixed(2);
-            document.getElementById('change').className = 
-                `text-lg font-bold ${changeVal >= 0 ? 'text-green-400' : 'text-red-400'}`;
+            // 2. FVG ជួបគ្នា
+            const bullishFVG = fvgs.filter(f => f.type==='BULLISH' && curr >= f.bottom && curr <= f.top);
+            const bearishFVG = fvgs.filter(f => f.type==='BEARISH' && curr >= f.bottom && curr <= f.top);
+            if(bullishFVG.length) { buyScore += 20; reasons.buy.push(`ជួប FVG ទិញ ${bullishFVG.length} កន្លែង`); }
+            if(bearishFVG.length) { sellScore += 20; reasons.sell.push(`ជួប FVG លក់ ${bearishFVG.length} កន្លែង`); }
 
-            const highs = Math.max(...priceData.map(d => d.high)).toFixed(2);
-            const lows = Math.min(...priceData.map(d => d.low)).toFixed(2);
-            document.getElementById('high').textContent = highs;
-            document.getElementById('low').textContent = lows;
-
-            // សញ្ញា
-            document.getElementById('signal-name').textContent =
-                sig.signal === 'BUY' ? 'ទិញ' :
-                sig.signal === 'SELL' ? 'លក់' : 'រង់ចាំ';
-            document.getElementById('entry').textContent = sig.entry;
-            document.getElementById('sl').textContent = sig.sl;
-            document.getElementById('tp').textContent = sig.tp;
-            document.getElementById('confidence').textContent =
-                sig.conf !== '—' ? `កម្រិតទំនុកចិត្ត៖ ${sig.conf
+            // 3. Order Block ជួបគ្នា
+            const buyOB = obs.find(o => o.type==='BUY' && curr
