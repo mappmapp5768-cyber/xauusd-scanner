@@ -145,7 +145,7 @@
         let currentTF = 15;
         const BASE_PRICE = 3904.60;
 
-        // នាឡិកា
+        // នាឡិកា — ម៉ោងភ្នំពេញ UTC+7 ត្រូវហើយ!
         function updateClock() {
             const now = new Date();
             document.getElementById('clock').textContent = 
@@ -296,8 +296,4 @@
             // S/R
             document.getElementById('sr-levels').innerHTML = `ទប់ទល់: ${sr.res[0] || '—'} / ទ្រទ្រង់: ${sr.sup[0] || '—'}`;
 
-            // វិភាគសញ្ញា
-            let signal = 'NEUTRAL', conf = 0, reason = 'រង់ចាំការជួបគ្នាច្រើន';
-            let entry = currPrice.toFixed(2), sl = '—', tp = '—';
-
-            const buyFVG = fvgs.some(f => f.type
+            // វិ
