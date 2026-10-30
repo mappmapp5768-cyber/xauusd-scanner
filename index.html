@@ -278,8 +278,4 @@
                 signal = 'BUY';
                 conf = 60 + (buyFVG ? 15 : 0) + (buyOB ? 15 : 0);
                 reason = 'Discount Zone + ' + (buyFVG ? 'Buy FVG ' : '') + (buyOB ? 'Buy Order Block' : '');
-                entry = currPrice.toFixed(2);
-                sl = (sr.sup[0] || currPrice - 5).toFixed(2);
-                tp = (sr.res[0] || currPrice + 8).toFixed(2);
-            } else if (zone === 'PREMIUM' && (sellFVG || sellOB)) {
-                signal = 'SELL';
+                entry = curr
