@@ -32,7 +32,7 @@
             <div class="flex justify-center items-center gap-4 text-sm">
                 <span class="flex items-center">
                     <span class="live-dot"></span>
-                    <span id="status">កំពុងធ្វើបច្ចុប្បន្នភាព...</span>
+                    <span id="status">កំពុងផ្ទុក...</span>
                 </span>
                 <span class="time-badge">
                     <i class="fa fa-clock-o"></i> ម៉ោងភ្នំពេញ៖ <span id="clock">00:00:00</span>
@@ -112,14 +112,14 @@
     <script>
         let chart, candleSeries, ema20Series, ema50Series;
         let priceData = [];
-        let currentTimeframe = 15; // M15 លំនាំដើម
+        let currentTimeframe = 1; // M1 លំនាំដើម
         const BASE_REAL_PRICE = 3904.60; // តម្លៃយោងពី TradingView
 
         // បង្ហាញនាឡិកាពិត (ម៉ោងភ្នំពេញ UTC+7)
         function updateClock() {
             const now = new Date();
             const options = { 
-                timeZone: 'Asia/Bangkok', // ដូចគ្នាទៅនឹងភ្នំពេញ UTC+7
+                timeZone: 'Asia/Bangkok',
                 hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false 
             };
             document.getElementById('clock').textContent = now.toLocaleTimeString('en-GB', options);
@@ -174,7 +174,6 @@
                 priceLineVisible: false,
                 lastValueVisible: false
             });
-            ema20Series.applyOptions({ priceScaleId: '' });
 
             ema50Series = chart.addLineSeries({ 
                 color: '#2962ff', 
@@ -182,7 +181,6 @@
                 priceLineVisible: false,
                 lastValueVisible: false
             });
-            ema50Series.applyOptions({ priceScaleId: '' });
 
             window.addEventListener('resize', () => {
                 chart.applyOptions({ width: container.clientWidth });
@@ -192,13 +190,13 @@
         // បង្កើតទិន្នន័យតម្លៃផ្លាស់ទីតាមពេលវេលា
         function generateData(timeframeMinutes) {
             const data = [];
-            let price = BASE_REAL_PRICE + (Math.random() - 0.5) * 10;
+            let price = BASE_REAL_PRICE + (Math.random() - 0.5) * 5;
             const now = Math.floor(Date.now() / 1000);
-            const interval = timeframeMinutes * 60; // ទៅជាវិនាទី
+            const interval = timeframeMinutes * 60;
             
-            for (let i = 99; i >= 0; i--) { // បង្ហាញ 100 ជើងចង្កៀង
+            for (let i = 99; i >= 0; i--) {
                 const time = now - i * interval;
-                const volatility = 1.5 + Math.random() * 3;
+                const volatility = 1.2 + Math.random() * 2;
                 const change = (Math.random() - 0.5) * volatility;
                 
                 const open = price;
@@ -245,7 +243,7 @@
         function calculateATR(data, period = 14) {
             let atr = [];
             for (let i = 0; i < data.length; i++) {
-                if (i < period) { atr.push(2.8); continue; }
+                if (i < period) { atr.push(2.5); continue; }
                 let sum = 0;
                 for (let j = i - period + 1; j <= i; j++) {
                     const hl = data[j].high - data[j].low;
@@ -305,7 +303,7 @@
             const atr = calculateATR(priceData, 14);
             const sig = analyzeSignal(priceData, ema20, ema50, rsi, atr);
 
-            // ធ្វើបច្ចុប្បន្នភាពស្ថានភាព
+            // ស្ថានភាព
             const now = new Date();
             document.getElementById('status').textContent = 
                 `បានធ្វើបច្ចុប្បន្នភាពនៅ ${now.toLocaleTimeString('en-GB', {timeZone:'Asia/Bangkok', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false})}`;
@@ -323,4 +321,14 @@
             const highs = Math.max(...priceData.map(d => d.high)).toFixed(2);
             const lows = Math.min(...priceData.map(d => d.low)).toFixed(2);
             document.getElementById('high').textContent = highs;
-            document
+            document.getElementById('low').textContent = lows;
+
+            // សញ្ញា
+            document.getElementById('signal-name').textContent =
+                sig.signal === 'BUY' ? 'ទិញ' :
+                sig.signal === 'SELL' ? 'លក់' : 'រង់ចាំ';
+            document.getElementById('entry').textContent = sig.entry;
+            document.getElementById('sl').textContent = sig.sl;
+            document.getElementById('tp').textContent = sig.tp;
+            document.getElementById('confidence').textContent =
+                sig.conf !== '—' ? `កម្រិតទំនុកចិត្ត៖ ${sig.conf
