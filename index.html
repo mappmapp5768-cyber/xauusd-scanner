@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="km">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -143,7 +143,7 @@
         let chart, candleSeries;
         let priceData = [];
         let currentTF = 15;
-        const BASE_PRICE = 3895.96; // Matches your chart current price
+        const BASE_PRICE = 3895.96;
 
         // --- LIVE CLOCK ---
         function updateClock() {
@@ -186,7 +186,7 @@
             for (let i = 99; i >= 0; i--) {
                 const time = now - i * interval;
                 const volatility = 2 + Math.random() * 3;
-                const change = (Math.random() - 0.52) * volatility; // Slight bearish bias like your chart
+                const change = (Math.random() - 0.52) * volatility;
                 const open = price;
                 const close = price + change;
                 const high = Math.max(open, close) + Math.random() * volatility * 0.4;
@@ -201,7 +201,7 @@
         function findFVGs(data) {
             const fvgs = [];
             for (let i = 2; i < data.length; i++) {
-                const curr = data[i], p1 = data[i-1], p2 = data[i-2];
+                const curr = data[i], p2 = data[i-2];
                 if (curr.low > p2.high) {
                     fvgs.push({ type:'BUY', top:curr.low, bottom:p2.high });
                 }
@@ -264,9 +264,7 @@
 
             // Update price cards
             document.getElementById('price').textContent = currPrice.toFixed(2);
-            document.getElementById('zone-type').textContent = 
-                zone === 'PREMIUM' ? 'PREMIUM' :
-                zone === 'DISCOUNT' ? 'DISCOUNT' : 'EQUILIBRIUM';
+            document.getElementById('zone-type').textContent = zone;
             document.getElementById('fvg-count').textContent = fvgs.length;
 
             // FVG List
@@ -280,9 +278,7 @@
                 : '<p class="text-slate-400 text-sm">No Order Block found</p>';
 
             // Premium/Discount styling
-            document.getElementById('pd-zone').textContent = 
-                zone === 'PREMIUM' ? 'PREMIUM' :
-                zone === 'DISCOUNT' ? 'DISCOUNT' : 'EQUILIBRIUM';
+            document.getElementById('pd-zone').textContent = zone;
             document.getElementById('pd-zone').className = 
                 zone === 'DISCOUNT' ? 'text-lg font-bold text-green-400' :
                 zone === 'PREMIUM' ? 'text-lg font-bold text-red-400' : 'text-lg font-bold text-slate-300';
@@ -292,4 +288,11 @@
 
             // Signal logic
             let signal = 'NEUTRAL', conf = 0, reason = 'Waiting for confluence';
-            let entry =
+            let entry = currPrice.toFixed(2), sl = '—', tp = '—';
+
+            const buyFVG = fvgs.some(f => f.type==='BUY' && currPrice >= f.bottom && currPrice <= f.top);
+            const sellFVG = fvgs.some(f => f.type==='SELL' && currPrice >= f.bottom && currPrice <= f.top);
+            const buyOB = obs.some(o => o.type==='BUY' && Math.abs(currPrice - o.level) < 3);
+            const sellOB = obs.some(o => o.type==='SELL' && Math.abs(currPrice - o.level) < 3);
+
+            if (zone ===
