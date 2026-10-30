@@ -280,4 +280,4 @@
                 tp = (sr.res[0] || currPrice + 8).toFixed(2);
             } else if (zone === 'PREMIUM' && (sellFVG || sellOB)) {
                 signal = 'SELL';
-                conf = 60 + (
+                conf = 60 + (sellFVG ? 15 : 0) + (sellOB ?
