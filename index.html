@@ -215,7 +215,7 @@
         // --- ORDER BLOCK DETECTION ---
         function findOBs(data) {
             const obs = [];
-            for (let i = 1; i < data.length-1; i++) {
+            for (let i = 1; i < data.length - 1; i++) {
                 const curr = data[i], next = data[i+1];
                 if (curr.close < curr.open && next.close > next.open && (next.close - curr.high) > 1.5) {
                     obs.push({ type:'BUY', level:curr.high });
@@ -232,8 +232,8 @@
             const highs = data.slice(-20).map(d => d.high);
             const lows = data.slice(-20).map(d => d.low);
             return {
-                res: [...new Set(highs.sort((a,b) => b-a).slice(0,3).map(x => x.toFixed(2)))].map(parseFloat),
-                sup: [...new Set(lows.sort((a,b) => a-b).slice(0,3).map(x => x.toFixed(2)))].map(parseFloat)
+                res: [...new Set(highs.sort((a,b) => b - a).slice(0,3).map(x => x.toFixed(2)))].map(parseFloat),
+                sup: [...new Set(lows.sort((a,b) => a - b).slice(0,3).map(x => x.toFixed(2)))].map(parseFloat)
             };
         }
 
@@ -242,7 +242,7 @@
             const high = Math.max(...data.map(d => d.high));
             const low = Math.min(...data.map(d => d.low));
             const mid = (high + low) / 2;
-            const curr = data[data.length-1].close;
+            const curr = data[data.length - 1].close;
             const range = high - low;
             if (curr > mid + range * 0.15) return 'PREMIUM';
             if (curr < mid - range * 0.15) return 'DISCOUNT';
@@ -295,4 +295,7 @@
             const buyOB = obs.some(o => o.type==='BUY' && Math.abs(currPrice - o.level) < 3);
             const sellOB = obs.some(o => o.type==='SELL' && Math.abs(currPrice - o.level) < 3);
 
-            if (zone ===
+            // BUY signal
+            if (zone === 'DISCOUNT' && (buyFVG || buyOB)) {
+                signal = 'BUY';
+                conf = 60 + (buyFVG ?
