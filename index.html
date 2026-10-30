@@ -29,7 +29,7 @@
             </h1>
             <p class="text-slate-400 text-sm">FVG · Order Block · Premium/Discount · S/R</p>
             <div class="flex justify-center items-center gap-4 mt-2 text-sm">
-                <span class="flex items-center"><span class="live-dot"></span><span id="status">កំពុងផ្ទុក...</span></span>
+                <span class="flex items-center"><span class="live-dot"></span><span id="status">កំពុងដំណើរការ...</span></span>
                 <span class="bg-slate-700 px-3 py-1 rounded">
                     <i class="fa fa-clock-o"></i> ម៉ោងភ្នំពេញ៖ <span id="clock">--:--:--</span>
                 </span>
@@ -102,13 +102,13 @@
                     <p id="sr-levels" class="text-lg font-bold">—</p>
                 </div>
                 <div class="p-4 rounded-lg bg-slate-700/40">
-                    <p class="text-xs text-slate-400 mb-1">ទំនុកចិត្ត</p>
+                    <p class="text-xs text-slate-400 mb-1">កម្រិតទំនុកចិត្ត</p>
                     <p id="conf-score" class="text-lg font-bold">—</p>
                 </div>
             </div>
         </div>
 
-        <!-- Trade Plan -->
+        <!-- ផែនការជួញដូរ -->
         <div class="card">
             <h3 class="text-lg font-semibold mb-3 text-center">
                 <i class="fa fa-bullseye"></i> ផែនការជួញដូរ
@@ -201,7 +201,7 @@
         function findFVGs(data) {
             const fvgs = [];
             for (let i = 2; i < data.length; i++) {
-                const curr = data[i], p1 = data[i-1], p2 = data[i-2];
+                const curr = data[i], p2 = data[i-2];
                 if (curr.low > p2.high) {
                     fvgs.push({ type:'BUY', top:curr.low, bottom:p2.high });
                 }
@@ -220,7 +220,7 @@
                 if (curr.close < curr.open && next.close > next.open && (next.close - curr.high) > 1) {
                     obs.push({ type:'BUY', level:curr.high });
                 }
-                if (curr.close > curr.open && next.close < next.open && (curr.low - next.close) > 1) {
+                if (curr.close > curr.open && next.close < next.close && (curr.low - next.close) > 1) {
                     obs.push({ type:'SELL', level:curr.low });
                 }
             }
@@ -229,23 +229,23 @@
 
         // រក Support/Resistance
         function findSR(data) {
-            const highs = data.slice(-20).map(d=>d.high);
-            const lows = data.slice(-20).map(d=>d.low);
+            const highs = data.slice(-20).map(d => d.high);
+            const lows = data.slice(-20).map(d => d.low);
             return {
-                res: [...new Set(highs.sort((a,b)=>b-a).slice(0,3).map(x=>x.toFixed(2)))].map(parseFloat),
-                sup: [...new Set(lows.sort((a,b)=>a-b).slice(0,3).map(x=>x.toFixed(2)))].map(parseFloat)
+                res: [...new Set(highs.sort((a,b) => b-a).slice(0,3).map(x => x.toFixed(2)))].map(parseFloat),
+                sup: [...new Set(lows.sort((a,b) => a-b).slice(0,3).map(x => x.toFixed(2)))].map(parseFloat)
             };
         }
 
         // Premium/Discount Zone
         function getZone(data) {
-            const high = Math.max(...data.map(d=>d.high));
-            const low = Math.min(...data.map(d=>d.low));
-            const mid = (high+low)/2;
+            const high = Math.max(...data.map(d => d.high));
+            const low = Math.min(...data.map(d => d.low));
+            const mid = (high + low) / 2;
             const curr = data[data.length-1].close;
             const range = high - low;
-            if (curr > mid + range*0.15) return 'PREMIUM';
-            if (curr < mid - range*0.15) return 'DISCOUNT';
+            if (curr > mid + range * 0.15) return 'PREMIUM';
+            if (curr < mid - range * 0.15) return 'DISCOUNT';
             return 'EQUILIBRIUM';
         }
 
@@ -260,17 +260,19 @@
             const obs = findOBs(priceData);
             const sr = findSR(priceData);
             const zone = getZone(priceData);
-            const currPrice = priceData[priceData.length-1].close;
+            const currPrice = priceData[priceData.length - 1].close;
 
             // បង្ហាញតម្លៃ
             document.getElementById('price').textContent = currPrice.toFixed(2);
-            document.getElementById('zone-type').textContent = zone;
+            document.getElementById('zone-type').textContent = 
+                zone === 'PREMIUM' ? 'ប្រាក់កម្ចី' :
+                zone === 'DISCOUNT' ? 'បញ្ចុះតម្លៃ' : 'សមភាព';
             document.getElementById('fvg-count').textContent = fvgs.length;
 
             // FVG List
             if (fvgs.length > 0) {
                 document.getElementById('fvg-list').innerHTML = 
-                    fvgs.map(f => `<p class="text-sm ${f.type==='BUY'?'text-green-400':'text-red-400'}">${f.type}: ${f.bottom.toFixed(2)} – ${f.top.toFixed(2)}</p>`).join('');
+                    fvgs.map(f => `<p class="text-sm ${f.type==='BUY'?'text-green-400':'text-red-400'}">${f.type==='BUY'?'ទិញ':'លក់'}: ${f.bottom.toFixed(2)} – ${f.top.toFixed(2)}</p>`).join('');
             } else {
                 document.getElementById('fvg-list').innerHTML = '<p class="text-slate-400 text-sm">មិនមាន FVG សកម្ម</p>';
             }
@@ -278,25 +280,24 @@
             // Order Block List
             if (obs.length > 0) {
                 document.getElementById('ob-list').innerHTML = 
-                    obs.map(o => `<p class="text-sm ${o.type==='BUY'?'text-green-400':'text-red-400'}">${o.type} OB: ${o.level.toFixed(2)}</p>`).join('');
+                    obs.map(o => `<p class="text-sm ${o.type==='BUY'?'text-green-400':'text-red-400'}">${o.type==='BUY'?'ទិញ':'លក់'} OB: ${o.level.toFixed(2)}</p>`).join('');
             } else {
                 document.getElementById('ob-list').innerHTML = '<p class="text-slate-400 text-sm">មិនទាន់រកឃើញ Order Block</p>';
             }
 
             // Premium/Discount
-            document.getElementById('pd-zone').textContent = zone;
+            document.getElementById('pd-zone').textContent = 
+                zone === 'PREMIUM' ? 'ប្រាក់កម្ចី' :
+                zone === 'DISCOUNT' ? 'បញ្ចុះតម្លៃ' : 'សមភាព';
             document.getElementById('pd-zone').className = 
-                zone==='DISCOUNT' ? 'text-lg font-bold text-green-400' :
-                zone==='PREMIUM' ? 'text-lg font-bold text-red-400' : 'text-lg font-bold text-slate-300';
+                zone === 'DISCOUNT' ? 'text-lg font-bold text-green-400' :
+                zone === 'PREMIUM' ? 'text-lg font-bold text-red-400' : 'text-lg font-bold text-slate-300';
 
             // S/R
-            document.getElementById('sr-levels').innerHTML = `R: ${sr.res[0] || '—'} / S: ${sr.sup[0] || '—'}`;
+            document.getElementById('sr-levels').innerHTML = `ទប់ទល់: ${sr.res[0] || '—'} / ទ្រទ្រង់: ${sr.sup[0] || '—'}`;
 
             // វិភាគសញ្ញា
             let signal = 'NEUTRAL', conf = 0, reason = 'រង់ចាំការជួបគ្នាច្រើន';
             let entry = currPrice.toFixed(2), sl = '—', tp = '—';
 
-            const buyFVG = fvgs.some(f => f.type==='BUY' && currPrice >= f.bottom && currPrice <= f.top);
-            const sellFVG = fvgs.some(f => f.type==='SELL' && currPrice >= f.bottom && currPrice <= f.top);
-            const buyOB = obs.some(o => o.type==='BUY' && Math.abs(currPrice - o.level) < 3);
-            const
+            const buyFVG = fvgs.some(f => f.type
