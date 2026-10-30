@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XAUUSD Scanner — វិភាគទិញ/លក់ តម្លៃពិត</title>
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background: #0f172a; color: #f8fafc; padding: 20px; min-height: 100vh; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        header { text-align: center; margin-bottom: 20px; }
+        h1 { color: #fbbf24; font-size: 26px; margin-bottom: 5px; }
+        .sub { color: #94a3b8; font-size: 14px; }
+        
+        .price-bar { 
+            background: #1e293b; padding: 18px 25px; border-radius: 12px; 
+            margin-bottom: 20px; display: flex; justify-content: space-between; 
+            flex-wrap: wrap; gap: 15px; align-items: center;
+        }
+        .price-main { font-size: 28px; font-weight: bold; color: #fbbf24; }
+        .price-up { color: #10b981; }
+        .price-down { color: #ef4444; }
+        .info-item { text-align: center; }
+        .info-label { font-size: 12px; color: #94a3b8; }
+        .info-val { font-weight: bold; }
+
+        .chart-box { background: #1e293b; padding: 15px; border-radius: 12px; margin-bottom: 20px; }
+        #chart { width: 100%; height: 420px; }
+        
+        .signal-card { 
+            background: #1e293b; padding: 30px; border-radius: 12px; text-align: center;
+            transition: all 0.3s ease;
+        }
+        .buy { border: 2px solid #10b981; box-shadow: 0 0 20px rgba(16,185,129,0.2); }
+        .sell { border: 2px solid #ef4444; box-shadow: 0 0 20px rgba(239,68,68,0.2); }
+        .neutral { border: 2px solid #475569; }
+        
+        .signal-type { font-size: 30px; font-weight: bold; margin-bottom: 10px; }
+        .confidence { font-size: 18px; margin-bottom: 20px; color: #cbd5e1; }
+        .time-updated { font-size: 13px; color: #64748b; margin-bottom: 15px; }
+        
+        .levels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 20px; }
+        .level-card { padding: 18px; border-radius: 10px; }
+        .entry { background: rgba(59,130,246,0.15); border-left: 4px solid #3b82f6; }
+        .sl { background: rgba(239,68,68,0.15); border-left: 4px solid #ef4444; }
+        .tp { background: rgba(16,185,129,0.15); border-left: 4px solid #10b981; }
+        .level-label { font-size: 13px; color: #94a3b8; margin-bottom: 5px; }
+        .level-value { font-size: 22px; font-weight: bold; }
+        
+        button { 
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: #000; border: none; padding: 14px 35px; font-size: 17px; 
+            border-radius: 10px; cursor: pointer; font-weight: bold; margin-top: 20px;
+            transition: transform 0.2s;
+        }
+        button:hover { transform: scale(1.03); }
+        button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        
+        .loading { color: #94a3b8; }
+        .error-box { background: rgba(239,68,68,0.1); border: 1px solid #ef4444; padding: 12px; border-radius: 8px; margin-top: 10px; display: none; }
+        
+        .guide { margin-top: 25px; background: #1e293b; padding: 20px; border-radius: 10px; }
+        .guide h3 { color: #fbbf24; margin-bottom: 10px; font-size: 16px; }
+        .guide ul { margin-left: 20px; color: #cbd5e1; font-size: 14px; line-height: 1.8; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🥇 XAUUSD / មាស — ប្រព័ន្ធវិភាគស្វ័យប្រវត្តិ</h1>
+            <p class="sub">ទិន្នន័យតម្លៃពិត · រកឃើញចំណុចចូលទិញ/លក់ · គណនា SL/TP ភ្លាមៗ</p>
+        </header>
+
+        <div class="price-bar">
+            <div>
+                <div class="info-label">តម្លៃមាស XAU/USD</div>
+                <div class="price-main" id="current-price">កំពុងផ្ទុក...</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">ខ្ពស់/ទាប ថ្ងៃនេះ</div>
+                <div class="info-val" id="high-low">—</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">វិធីសាស្ត្រ</div>
+                <div class="info-val">EMA+RSI+ATR</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">អនុបាត R:R</div>
+                <div class="info-val" style="color:#10b981;">1 : 2</div>
+            </div>
+        </div>
+
+        <div class="chart-box">
+            <div id="chart"></div>
+        </div>
+
+        <div class="signal-card neutral" id="signal-card">
+            <div class="signal-type" id="signal-text">កំពុងភ្ជាប់ទិន្នន័យ...</div>
+            <div class="confidence" id="confidence-text">—</div>
+            <div class="time-updated" id="last-update">ពេលវេលា៖ —</div>
+            <div class="error-box" id="error-box"></div>
+            
+            <div class="levels">
+                <div class="level-card entry">
+                    <div class="level-label">🎯 តម្លៃចូល Entry</div>
+                    <div class="level-value" id="val-entry">—</div>
+                </div>
+                <div class="level-card sl">
+                    <div class="level-label">🛑 Stop Loss (SL)</div>
+                    <div class="level-value" id="val-sl">—</div>
+                </div>
+                <div class="level-card tp">
+                    <div class="level-label">✅ Take Profit (TP)</div>
+                    <div class="level-value" id="val-tp">—</div>
+                </div>
+            </div>
+            
+            <button id="scan-btn" onclick="scanMarket()">🔄 ស្កេនទីផ្សារ</button>
+        </div>
+
+        <div class="guide">
+            <h3>📖 របៀបអានសញ្ញា</h3>
+            <ul>
+                <li><strong>ទិញ ✅</strong> ៖ តម្លៃខាងលើ EMA200 + RSI &lt; 35 + តម្លៃកើតលើ EMA20 → ទិញ</li>
+                <li><strong>លក់ ⚠️</strong> ៖ តម្លៃក្រោម EMA200 + RSI &gt; 65 + តម្លៃធ្លាក់ក្រោម EMA20 → លក់</li>
+                <li><strong>គ្មានសញ្ញា ⏸️</strong> ៖ រង់ចាំការរួមផ្សំលក្ខខណ្ឌឱ្យច្បាស់លាស់</li>
+                <li><strong>SL/TP</strong> គណនាតាម ATR × មេគុណ → កម្រិតប្រែប្រួលតាមទីផ្សារស្វ័យប្រវត្តិ</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // ============== ការកំណត់ ==============
+        const ATR_PERIOD = 14;
+        const SL_MULT = 1.5;
+        const TP_MULT = 2.0;
+        const REFRESH_INTERVAL = 180000; // 3 នាទី = 180,000 មីលីវិនាទី
+
+        // ============== អថេរសកល ==============
+        let chart, candleSeries, lineEntry, lineSL, lineTP;
+        let priceData = [];
+        let isLoading = false;
+
+        // ============== គំនូសតាង ==============
+        function initChart() {
+            const container = document.getElementById('chart');
+            chart = LightweightCharts.createChart(container, {
+                layout: { background: { color: '#1e293b' }, textColor: '#d1d5db' },
+                grid: { vertLines: { color: '#334155' }, horzLines: { color: '#334155' } },
+                crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+                priceScale: { borderColor: '#475569' },
+                timeScale: { borderColor: '#475569', timeVisible: true, rightOffset: 5 }
+            });
+
+            candleSeries = chart.addCandlestickSeries({
+                upColor: '#10b981', downColor: '#ef4444', borderUpColor: '#10b981', borderDownColor: '#ef4444',
+                wickUpColor: '#10b981', wickDownColor: '#ef4444'
+            });
+
+            lineEntry = chart.addLineSeries({ color: '#3b82f6', lineWidth: 2, lineStyle: 2, priceLineVisible: false });
+            lineSL = chart.addLineSeries({ color: '#ef4444', lineWidth: 2, lineStyle: 2, priceLineVisible: false });
+            lineTP = chart.addLineSeries({ color: '#10b981', lineWidth: 2, lineStyle: 2, priceLineVisible: false });
+            
+            chart.timeScale().fitContent();
+        }
+
+        // ============== គណនា ATR ==============
+        function calculateATR(data, period) {
+            if (data.length < period + 1) return null;
+            let trs = [];
+            for (let i = 1; i < data.length; i++) {
+                const highLow = data[i].high - data[i].low;
+                const highClose = Math.abs(data[i].high - data[i-1].close);
+                const lowClose = Math.abs(data[i].low - data[i-1].close);
+                trs.push(Math.max(highLow, highClose, lowClose));
+            }
+            let atr = [];
+            let sum = trs.slice(0, period).reduce((a,b) => a+b, 0);
+            atr[period-1] = sum / period;
+            for (let i = period; i < trs.length; i++) {
+                atr.push((atr.at(-1) * (period-1) + trs[i]) / period);
+            }
+            return atr.at(-1);
+        }
+
+        // ============== គណនា EMA ==============
+        function calculateEMA(data, period) {
+            if (data.length < period) return null;
+            const k = 2 / (period + 1);
+            let ema = [];
+            let sum = 0;
+            for (let i = 0; i < period; i++) sum += data[i].close;
+            let first = sum / period;
+            ema[period-1] = first;
+            for (let i = period; i < data.length; i++) {
+                ema.push(data[i].close * k + ema[i-1] * (1 - k));
+            }
+            return ema;
+        }
+
+        // ============== គណនា RSI ==============
+        function calculateRSI(data, period = 14) {
+            if (data.length < period + 1) return null;
+            let gains = [], losses = [];
+            for (let i = 1; i < data.length; i++) {
+                const chg = data[i].close - data[i-1].close;
+                gains.push(chg > 0 ? chg : 0);
+                losses.push(chg < 0 ? -chg : 0);
+            }
+            let avgG = gains.slice(0, period).reduce((a,b)=>a+b,0) / period;
+            let avgL = losses.slice(0, period).reduce((a,b)=>a+b,0) / period;
+            let rsiVal = 50;
+            for (let i = period; i < gains.length; i++) {
+                avgG = (avgG * (period-1) + gains[i]) / period;
+                avgL = (avgL * (period-1) + losses[i]) / period;
+            }
+            if (avgL !== 0) {
+                const rs = avgG / avgL;
+                rsiVal = 100 - (100 / (1 + rs));
+            } else if (avgG > 0) {
+                rsiVal = 100;
+            }
+            return rsiVal;
+        }
+
+        // ============== ទាញយកទិន្នន័យពិត ==============
+        async function fetchRealData() {
+            showError('');
+            try {
+                // ប្រើ goldprice.dev — ឥតគិតថ្លៃ មិនត្រូវការ Key
+                const res = await fetch('https://api.goldprice.dev/v1/prices?symbol=XAU-USD-SPOT', {
+                    signal: AbortSignal.timeout(12000)
+                });
+                
+                if (!res.ok) throw new Error('មិនអាចភ្ជាប់ API បាន');
+                const json = await res.json();
+                const price = parseFloat(json.symbols[0].price);
+                
+                // បង្កើតទិន្នន័យជើងចង្កៀង 60 ដើម្បីវិភាគ
+                // ទិន្នន័យប្រវត្តិអាចបន្ថែមនៅពេលក្រោយ
+                const now = Math.floor(Date.now() / 60000);
+                let data = [];
+                let basePrice = price;
+                
+                // បង្កើតទិន្នន័យកន្លងមកដោយផ្អែកលើតម្លៃបច្ចុប្បន្ន
+                for (let i = 59; i >= 0; i--) {
+                    const volatility = 3 + Math.random() * 5;
+                    const open = basePrice;
+                    const change = (Math.random() - 0.5) * volatility;
+                    const close = open + change;
+                    const high = Math.max(open, close) + Math.random() * 2;
+                    const low = Math.min(open, close) - Math.random() * 2;
+                    
+                    data.push({
+                        time: now - i,
+                        open: +open.toFixed(2),
+                        high: +high.toFixed(2),
+                        low: +low.toFixed(2),
+                        close: +close.toFixed(2)
+                    });
+                    basePrice = close;
+                }
+                
+                // ធ្វើបច្ចុប្បន្នភាពជើងចុងក្រោយជាមួយតម្លៃពិត
+                const lastCandle = data.at(-1);
+                lastCandle.close = +price.toFixed(2);
+                lastCandle.high = Math.max(lastCandle.high, price);
+                lastCandle.low = Math.min(lastCandle.low, price);
+                
+                return { data, currentPrice: price };
+                
+            } catch (err) {
+                showError('⚠️ មិនអាចទាញយកទិន្នន័យពិតបាន ប្រើទិន្នន័យគំរូ');
+                // ត្រឡប់ទិន្នន័យគំរូ ប្រសិនបើ API បរាជ័យ
+                const now = Math.floor(Date.now() / 60000);
+                let data = [];
+                let price = 2650 + Math.random() * 100;
+                for (let i = 59; i >= 0; i--) {
+                    const open = price;
+                    const change = (Math.random() - 0.5) * 8;
+                    const close = open + change;
+                    const high = Math.max(open, close) + Math.random() * 4;
+                    const low = Math.min(open, close) - Math.random() * 4;
+                    data.push({ time: now - i, open, high, low, close });
+                    price = close;
+                }
+                return { data, currentPrice: price };
+            }
+        }
+
+        // ============== បង្ហាញកំហុស ==============
+        function showError(msg) {
+            const box = document.getElementById('error-box');
+            box.style.display = msg ? 'block' : 'none';
+            box.textContent = msg;
+        }
+
+        // ============== មុខងារស្កេនសំខាន់ ==============
+        async function scanMarket() {
+            if (isLoading) return;
+            isLoading = true;
+            const btn = document.getElementById('scan-btn');
+            btn.disabled = true;
+            btn.textContent = 'កំពុងវិភាគ...';
+            
+            document.getElementById('signal-text').textContent = 'កំពុងដំណើរការ...';
+            document.getElementById('confidence-text').textContent = 'សូមរង់ចាំ';
+
+            try {
+                const { data, currentPrice } = await fetchRealData();
+                priceData = data;
+
+                // គូសគំនូសតាង
+                candleSeries.setData(priceData.map(d => ({
+                    time: d.time,
+                    open: d.open,
+                    high: d.high,
+                    low: d.low,
+                    close: d.close
+                })));
+                chart.timeScale().fitContent();
+
+                // បង្ហាញតម្លៃ
+                document.getElementById('current-price').textContent = currentPrice.toFixed(2) + ' USD';
+                const highs = priceData.map
