@@ -10,17 +10,14 @@
     <style>
         body { background: #0f172a; color: #e2e8f0; font-family: 'Segoe UI', sans-serif; }
         .card { background: #1e293b; border-radius: 10px; padding: 18px; margin-bottom: 16px; }
-        .buy-box { background: rgba(16,185,129,0.15); border: 2px solid #10b981; }
-        .sell-box { background: rgba(239,68,68,0.15); border: 2px solid #ef4444; }
-        .neutral-box { background: #334155; border: 2px solid #64748b; }
+        .signal-buy { background: rgba(16,185,129,0.15); border: 2px solid #10b981; }
+        .signal-sell { background: rgba(239,68,68,0.15); border: 2px solid #ef4444; }
+        .signal-neutral { background: #334155; border: 2px solid #64748b; }
         .timeframe-btn { padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; margin: 2px; }
         .timeframe-btn.active { background: #3b82f6; color: white; box-shadow: 0 0 0 2px rgba(59,130,246,0.4); }
         .timeframe-btn:not(.active) { background: #334155; color: #94a3b8; }
         .live-dot { width: 10px; height: 10px; background: #10b981; border-radius: 50%; display: inline-block; margin-right: 6px; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% {opacity:1;} 50% {opacity:0.3;} 100% {opacity:1;} }
-        .signal-buy { background: rgba(16,185,129,0.15); border: 2px solid #10b981; }
-        .signal-sell { background: rgba(239,68,68,0.15); border: 2px solid #ef4444; }
-        .signal-neutral { background: #334155; border: 2px solid #64748b; }
     </style>
 </head>
 <body class="min-h-screen py-4 px-3">
@@ -33,7 +30,7 @@
             <div class="flex justify-center items-center gap-4 mt-2 text-sm">
                 <span class="flex items-center"><span class="live-dot"></span><span id="status">Market Live — Running</span></span>
                 <span class="bg-slate-700 px-3 py-1 rounded">
-                    <i class="fa fa-clock-o"></i> Ho Chi Minh Time: <span id="clock">--:--:--</span>
+                    <i class="fa fa-clock-o"></i> Phnom Penh Time: <span id="clock">--:--:--</span>
                 </span>
             </div>
         </header>
@@ -141,14 +138,26 @@
         let currentTF = 15;
         const BASE_PRICE = 3895.96;
 
+        // === CLOCK ===
         function updateClock() {
             const now = new Date();
             document.getElementById('clock').textContent = 
-                now.toLocaleTimeString('en-GB', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+                now.toLocaleTimeString('en-GB', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
         }
         setInterval(updateClock, 1000);
         updateClock();
 
+        // === TIMEFRAME BUTTONS ===
+        document.querySelectorAll('.timeframe-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.timeframe-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentTF = parseInt(btn.dataset.tf);
+                runFullAnalysis();
+            });
+        });
+
+        // === INIT CHART ===
         function initChart() {
             const container = document.getElementById('chart');
             chart = LightweightCharts.createChart(container, {
@@ -158,7 +167,8 @@
                 rightPriceScale: { borderColor: '#334155' },
                 timeScale: { borderColor: '#334155', timeVisible: true,
                     tickMarkFormatter: t => new Date(t * 1000).toLocaleTimeString('en-GB', {
-                        timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hour12: false }) }
+                        timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit', hour12: false })
+                    }
             });
             candleSeries = chart.addCandlestickSeries({
                 upColor: '#10b981', downColor: '#ef4444', borderUpColor: '#10b981',
@@ -167,6 +177,7 @@
             window.addEventListener('resize', () => chart.applyOptions({ width: container.clientWidth }));
         }
 
+        // === GENERATE DATA ===
         function genData(tfMin) {
             const data = [];
             let price = BASE_PRICE + (Math.random() - 0.5) * 12;
@@ -186,6 +197,7 @@
             return data;
         }
 
+        // === FVG DETECTION ===
         function findFVGs(data) {
             const fvgs = [];
             for (let i = 2; i < data.length; i++) {
@@ -196,6 +208,7 @@
             return fvgs.slice(-4);
         }
 
+        // === ORDER BLOCK DETECTION ===
         function findOBs(data) {
             const obs = [];
             for (let i = 1; i < data.length - 1; i++) {
@@ -208,6 +221,7 @@
             return obs.slice(-3);
         }
 
+        // === SUPPORT / RESISTANCE ===
         function findSR(data) {
             const highs = data.slice(-20).map(d => d.high);
             const lows = data.slice(-20).map(d => d.low);
@@ -217,6 +231,7 @@
             };
         }
 
+        // === PREMIUM/DISCOUNT ZONE ===
         function getZone(data) {
             const high = Math.max(...data.map(d => d.high));
             const low = Math.min(...data.map(d => d.low));
@@ -228,6 +243,7 @@
             return 'EQUILIBRIUM';
         }
 
+        // === FULL ANALYSIS ===
         function runFullAnalysis() {
             document.getElementById('status').textContent = 'Updating...';
             priceData = genData(currentTF);
@@ -268,6 +284,4 @@
             if (zone === 'DISCOUNT' && (buyFVG || buyOB)) {
                 signal = 'BUY';
                 conf = 60 + (buyFVG ? 15 : 0) + (buyOB ? 15 : 0);
-                reason = 'Discount Zone + ' + (buyFVG ? 'Buy FVG ' : '') + (buyOB ? 'Buy Order Block' : '');
-                entry = currPrice.toFixed(2);
-                sl = (sr.sup[0] || currPrice -
+                reason = 'Discount Zone
