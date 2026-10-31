@@ -18,6 +18,9 @@
         .timeframe-btn:not(.active) { background: #334155; color: #94a3b8; }
         .live-dot { width: 10px; height: 10px; background: #10b981; border-radius: 50%; display: inline-block; margin-right: 6px; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% {opacity:1;} 50% {opacity:0.3;} 100% {opacity:1;} }
+        .signal-buy { background: rgba(16,185,129,0.15); border: 2px solid #10b981; }
+        .signal-sell { background: rgba(239,68,68,0.15); border: 2px solid #ef4444; }
+        .signal-neutral { background: #334155; border: 2px solid #64748b; }
     </style>
 </head>
 <body class="min-h-screen py-4 px-3">
@@ -96,7 +99,7 @@
                     <p id="sr-levels" class="text-lg font-bold">—</p>
                 </div>
                 <div class="p-4 rounded-lg bg-slate-700/40">
-                    <p class="text-xs text-slate-400 mb-1">Confidence</p>
+                    <p class="text-xs text-slate-400 mb-1">Confidence %</p>
                     <p id="conf-score" class="text-lg font-bold">—</p>
                 </div>
             </div>
@@ -121,7 +124,7 @@
                 </div>
             </div>
 
-            <div id="trade-plan-box" class="text-center p-5 rounded-lg neutral-box mb-4">
+            <div id="trade-plan-box" class="text-center p-5 rounded-lg signal-neutral mb-4">
                 <p id="signal-text" class="text-lg font-semibold mb-1">Analyzing market...</p>
                 <p id="trade-reason" class="text-sm text-slate-300">—</p>
             </div>
@@ -145,15 +148,6 @@
         }
         setInterval(updateClock, 1000);
         updateClock();
-
-        document.querySelectorAll('.timeframe-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.timeframe-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                currentTF = parseInt(btn.dataset.tf);
-                runFullAnalysis();
-            });
-        });
 
         function initChart() {
             const container = document.getElementById('chart');
@@ -276,8 +270,4 @@
                 conf = 60 + (buyFVG ? 15 : 0) + (buyOB ? 15 : 0);
                 reason = 'Discount Zone + ' + (buyFVG ? 'Buy FVG ' : '') + (buyOB ? 'Buy Order Block' : '');
                 entry = currPrice.toFixed(2);
-                sl = (sr.sup[0] || currPrice - 5).toFixed(2);
-                tp = (sr.res[0] || currPrice + 8).toFixed(2);
-            } else if (zone === 'PREMIUM' && (sellFVG || sellOB)) {
-                signal = 'SELL';
-                conf = 60 + (sellFVG ? 15 : 0) + (sellOB ?
+                sl = (sr.sup[0] || currPrice -
