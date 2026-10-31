@@ -1,287 +1,168 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>XAUUSD — ICT + CRT Scanner</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-    <style>
-        body { background: #0f172a; color: #e2e8f0; font-family: 'Segoe UI', sans-serif; }
-        .card { background: #1e293b; border-radius: 10px; padding: 18px; margin-bottom: 16px; }
-        .signal-buy { background: rgba(16,185,129,0.15); border: 2px solid #10b981; }
-        .signal-sell { background: rgba(239,68,68,0.15); border: 2px solid #ef4444; }
-        .signal-neutral { background: #334155; border: 2px solid #64748b; }
-        .timeframe-btn { padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; margin: 2px; }
-        .timeframe-btn.active { background: #3b82f6; color: white; box-shadow: 0 0 0 2px rgba(59,130,246,0.4); }
-        .timeframe-btn:not(.active) { background: #334155; color: #94a3b8; }
-        .live-dot { width: 10px; height: 10px; background: #10b981; border-radius: 50%; display: inline-block; margin-right: 6px; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% {opacity:1;} 50% {opacity:0.3;} 100% {opacity:1;} }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1220">
+  <title>XAUUSD ICT + CRT Dashboard</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg:#0b1220; --panel:#121d30; --panel2:#17243a; --line:#263650;
+      --text:#e6edf7; --muted:#93a4bc; --gold:#f5bd4f; --green:#22c58b;
+      --red:#fb6474; --blue:#63a6ff;
+    }
+    * { box-sizing:border-box }
+    body { margin:0; background:var(--bg); color:var(--text); font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif }
+    .wrap { max-width:1400px; margin:auto; padding:24px 18px 40px }
+    header { display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:20px }
+    h1 { margin:0; font-size:clamp(22px,3vw,32px); letter-spacing:.2px }
+    .gold { color:var(--gold) }
+    .sub { color:var(--muted); margin:5px 0 0 }
+    .status { display:flex; gap:9px; align-items:center; color:var(--muted); font-size:13px }
+    .dot { width:9px; height:9px; border-radius:50%; background:var(--green); box-shadow:0 0 12px #22c58b88 }
+    .grid { display:grid; gap:14px }
+    .stats { grid-template-columns:repeat(4,minmax(0,1fr)); margin-bottom:14px }
+    .card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px; min-width:0 }
+    .label { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.08em }
+    .value { font-size:21px; font-weight:700; margin-top:5px }
+    .small { color:var(--muted); font-size:12px; margin-top:5px }
+    .toolbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px }
+    button, .linkbtn { border:1px solid var(--line); border-radius:8px; padding:8px 13px; background:var(--panel2); color:var(--text); cursor:pointer; text-decoration:none; font:inherit }
+    button:hover, .linkbtn:hover { border-color:var(--blue) }
+    button.active { background:#1d4777; border-color:var(--blue); color:#fff }
+    .spacer { flex:1 }
+    .chart-card { padding:10px; }
+    tv-advanced-chart { display:block; width:100%; height: min(70vh,680px); min-height:420px; }
+    .two { grid-template-columns:1fr 1fr; margin-top:14px }
+    .three { grid-template-columns:repeat(3,minmax(0,1fr)); margin-top:14px }
+    h2 { margin:0 0 12px; font-size:17px }
+    .notice { border-left:3px solid var(--gold); background:#211d13; color:#ead9b4; padding:12px 14px; border-radius:8px; font-size:13px }
+    .pill { display:inline-block; border-radius:999px; padding:3px 9px; font-size:11px; font-weight:700; background:#3a2d16; color:var(--gold) }
+    .muted { color:var(--muted) }
+    .row { display:flex; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid var(--line) }
+    .row:last-child { border-bottom:0 }
+    .footer { color:var(--muted); font-size:12px; margin-top:18px }
+    @media (max-width:850px) { .stats {grid-template-columns:repeat(2,minmax(0,1fr))} .two,.three {grid-template-columns:1fr} }
+    @media (max-width:480px) { .wrap {padding:16px 10px 28px} .stats {gap:8px} .card {padding:13px} .value {font-size:18px} tv-advanced-chart {min-height:380px;height:58vh} }
+  </style>
 </head>
-<body class="min-h-screen py-4 px-3">
-    <div class="max-w-7xl mx-auto">
-        <header class="text-center mb-4">
-            <h1 class="text-2xl font-bold text-amber-400 mb-2">
-                <i class="fa fa-bolt"></i> XAUUSD — ICT + CRT Scanner
-            </h1>
-            <p class="text-slate-400 text-sm">FVG · Order Block · Premium/Discount · S/R</p>
-            <div class="flex justify-center items-center gap-4 mt-2 text-sm">
-                <span class="flex items-center"><span class="live-dot"></span><span id="status">Market Live — Running</span></span>
-                <span class="bg-slate-700 px-3 py-1 rounded">
-                    <i class="fa fa-clock-o"></i> Phnom Penh Time: <span id="clock">--:--:--</span>
-                </span>
-            </div>
-        </header>
+<body>
+  <main class="wrap">
+    <header>
+      <div>
+        <h1><span class="gold">◆</span> XAUUSD — ICT + CRT Scanner</h1>
+        <p class="sub">TradingView chart · M15-focused workspace · Phnom Penh time</p>
+      </div>
+      <div class="status"><span class="dot"></span><span id="feedStatus">Loading TradingView chart…</span><span>·</span><span id="clock">--:--:--</span></div>
+    </header>
 
-        <div class="flex justify-center flex-wrap mb-4">
-            <button class="timeframe-btn" data-tf="1">M1</button>
-            <button class="timeframe-btn" data-tf="5">M5</button>
-            <button class="timeframe-btn active" data-tf="15">M15</button>
-            <button class="timeframe-btn" data-tf="60">H1</button>
-            <button class="timeframe-btn" data-tf="240">H4</button>
+    <section class="grid stats">
+      <article class="card"><div class="label">Instrument</div><div class="value">XAUUSD</div><div class="small" id="symbolLabel">OANDA:XAUUSD</div></article>
+      <article class="card"><div class="label">Selected timeframe</div><div class="value" id="tfValue">M15</div><div class="small">Change using the buttons below</div></article>
+      <article class="card"><div class="label">Market data</div><div class="value" style="font-size:17px">TradingView</div><div class="small">Feed availability depends on symbol</div></article>
+      <article class="card"><div class="label">ICT signal engine</div><div class="value" style="font-size:17px;color:var(--gold)">Not connected</div><div class="small">No fabricated BUY / SELL signals</div></article>
+    </section>
+
+    <section class="card chart-card">
+      <div class="toolbar" aria-label="Chart controls">
+        <strong style="margin-right:5px">Timeframe</strong>
+        <button class="tf" data-interval="1">M1</button>
+        <button class="tf" data-interval="5">M5</button>
+        <button class="tf active" data-interval="15">M15</button>
+        <button class="tf" data-interval="60">H1</button>
+        <button class="tf" data-interval="240">H4</button>
+        <span class="spacer"></span>
+        <button id="oandaBtn" class="active">OANDA</button>
+        <button id="fxidcBtn">FX_IDC</button>
+        <a class="linkbtn" id="openTv" href="https://www.tradingview.com/chart/?symbol=OANDA%3AXAUUSD" target="_blank" rel="noopener">Open in TradingView ↗</a>
+      </div>
+      <tv-advanced-chart id="tvChart" symbol="OANDA:XAUUSD" interval="15" timezone="Asia/Bangkok" theme="dark"></tv-advanced-chart>
+    </section>
+
+    <section class="grid two">
+      <article class="card">
+        <h2>ICT + CRT Analysis</h2>
+        <div class="notice">
+          Automatic FVG, Order Block, liquidity sweep, MSS and signal calculations are intentionally disabled until the website has access to candle OHLC data. TradingView's embedded chart does not expose its candle data to this page.
         </div>
+        <div class="row"><span class="muted">Fair Value Gap</span><strong>Waiting for OHLC feed</strong></div>
+        <div class="row"><span class="muted">Order Block</span><strong>Waiting for OHLC feed</strong></div>
+        <div class="row"><span class="muted">Liquidity Sweep / MSS</span><strong>Waiting for OHLC feed</strong></div>
+        <div class="row"><span class="muted">CRT range</span><strong>Waiting for OHLC feed</strong></div>
+      </article>
+      <article class="card">
+        <h2>Trade Plan</h2>
+        <div class="row"><span class="muted">Signal</span><strong class="pill">NOT AVAILABLE</strong></div>
+        <div class="row"><span class="muted">Entry</span><strong>—</strong></div>
+        <div class="row"><span class="muted">Stop loss</span><strong>—</strong></div>
+        <div class="row"><span class="muted">TP1 / TP2 / TP3</span><strong>—</strong></div>
+        <p class="small">This page will not invent prices or pretend that random candles are live market data.</p>
+      </article>
+    </section>
 
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            <div class="card text-center">
-                <p class="text-xs text-slate-400">Current Price</p>
-                <p id="price" class="text-xl font-bold text-amber-300">—</p>
-            </div>
-            <div class="card text-center">
-                <p class="text-xs text-slate-400">Market Zone</p>
-                <p id="zone-type" class="text-lg font-bold">—</p>
-            </div>
-            <div class="card text-center">
-                <p class="text-xs text-slate-400">Active FVG</p>
-                <p id="fvg-count" class="text-lg font-bold text-purple-400">—</p>
-            </div>
-            <div class="card text-center">
-                <p class="text-xs text-slate-400">Signal</p>
-                <p id="signal-type" class="text-lg font-bold">—</p>
-            </div>
-        </div>
+    <section class="grid three">
+      <article class="card"><div class="label">Next integration step</div><h2 style="margin-top:8px">OHLC data feed</h2><p class="muted">Connect a licensed data API or broker feed that returns historical and live XAUUSD candles.</p></article>
+      <article class="card"><div class="label">Signal delivery</div><h2 style="margin-top:8px">TradingView alerts</h2><p class="muted">A Pine Script indicator can calculate signals on TradingView. To show alerts on this website, send alert webhooks to a backend endpoint.</p></article>
+      <article class="card"><div class="label">Hosting</div><h2 style="margin-top:8px">GitHub Pages</h2><p class="muted">This frontend is static and can be hosted from a GitHub repository. GitHub Pages alone cannot receive webhook POST requests or safely store API secrets.</p></article>
+    </section>
 
-        <div class="card mb-4">
-            <div id="chart" style="width: 100%; height: 450px;"></div>
-        </div>
+    <p class="footer">Chart and market data are provided by TradingView. XAUUSD symbol feeds can differ between providers. This dashboard is informational, not financial advice.</p>
+  </main>
 
-        <div class="card mb-4">
-            <h3 class="text-lg font-semibold mb-3 text-purple-400">
-                <i class="fa fa-sitemap"></i> ICT Analysis
-            </h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="p-4 rounded-lg bg-purple-900/20 border border-purple-500/30">
-                    <h4 class="font-semibold text-purple-300 mb-2">Fair Value Gap (FVG)</h4>
-                    <div id="fvg-list"><p class="text-slate-400 text-sm">Scanning...</p></div>
-                </div>
-                <div class="p-4 rounded-lg bg-slate-700/40">
-                    <h4 class="font-semibold text-amber-300 mb-2">Order Block</h4>
-                    <div id="ob-list"><p class="text-slate-400 text-sm">Scanning...</p></div>
-                </div>
-            </div>
-        </div>
+  <script type="module" src="https://www.tradingview-widget.com/w/en/tv-advanced-chart.js"></script>
+  <script>
+    (() => {
+      const chart = document.getElementById('tvChart');
+      const feedStatus = document.getElementById('feedStatus');
+      const tfValue = document.getElementById('tfValue');
+      const symbolLabel = document.getElementById('symbolLabel');
+      const openTv = document.getElementById('openTv');
+      let symbol = 'OANDA:XAUUSD';
 
-        <div class="card mb-4">
-            <h3 class="text-lg font-semibold mb-3 text-blue-400">
-                <i class="fa fa-crosshairs"></i> CRT — Confluence Zones
-            </h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="p-4 rounded-lg bg-slate-700/40">
-                    <p class="text-xs text-slate-400 mb-1">Premium / Discount</p>
-                    <p id="pd-zone" class="text-lg font-bold">—</p>
-                </div>
-                <div class="p-4 rounded-lg bg-slate-700/40">
-                    <p class="text-xs text-slate-400 mb-1">Support / Resistance</p>
-                    <p id="sr-levels" class="text-lg font-bold">—</p>
-                </div>
-                <div class="p-4 rounded-lg bg-slate-700/40">
-                    <p class="text-xs text-slate-400 mb-1">Confidence %</p>
-                    <p id="conf-score" class="text-lg font-bold">—</p>
-                </div>
-            </div>
-        </div>
+      const tfNames = { '1':'M1', '5':'M5', '15':'M15', '60':'H1', '240':'H4' };
 
-        <div class="card">
-            <h3 class="text-lg font-semibold mb-3 text-center">
-                <i class="fa fa-bullseye"></i> Trade Plan
-            </h3>
-            <div class="grid grid-cols-3 gap-4 mb-4">
-                <div class="text-center p-4 rounded-lg border-2 border-blue-500/50">
-                    <p class="text-xs text-slate-400 mb-1">Entry</p>
-                    <p id="final-entry" class="text-lg font-bold">—</p>
-                </div>
-                <div class="text-center p-4 rounded-lg border-2 border-red-500/50">
-                    <p class="text-xs text-slate-400 mb-1">Stop Loss</p>
-                    <p id="final-sl" class="text-lg font-bold text-red-400">—</p>
-                </div>
-                <div class="text-center p-4 rounded-lg border-2 border-green-500/50">
-                    <p class="text-xs text-slate-400 mb-1">Take Profit</p>
-                    <p id="final-tp" class="text-lg font-bold text-green-400">—</p>
-                </div>
-            </div>
-
-            <div id="trade-plan-box" class="text-center p-5 rounded-lg signal-neutral mb-4">
-                <p id="signal-text" class="text-lg font-semibold mb-1">Analyzing market...</p>
-                <p id="trade-reason" class="text-sm text-slate-300">—</p>
-            </div>
-
-            <button onclick="runFullAnalysis()" class="w-full bg-amber-500 hover:bg-amber-600 text-black font-bold py-3 rounded-lg transition-all">
-                <i class="fa fa-refresh"></i> Refresh & Analyze ICT+CRT
-            </button>
-        </div>
-    </div>
-
-    <script>
-        let chart, candleSeries;
-        let priceData = [];
-        let currentTF = 15;
-        const BASE_PRICE = 3895.96;
-
-        // === CLOCK ===
-        function updateClock() {
-            const now = new Date();
-            document.getElementById('clock').textContent = 
-                now.toLocaleTimeString('en-GB', { timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-        }
-        setInterval(updateClock, 1000);
-        updateClock();
-
-        // === TIMEFRAME BUTTONS ===
-        document.querySelectorAll('.timeframe-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.timeframe-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                currentTF = parseInt(btn.dataset.tf);
-                runFullAnalysis();
-            });
+      document.querySelectorAll('.tf').forEach(button => {
+        button.addEventListener('click', () => {
+          document.querySelectorAll('.tf').forEach(b => b.classList.remove('active'));
+          button.classList.add('active');
+          const interval = button.dataset.interval;
+          chart.setAttribute('interval', interval);
+          tfValue.textContent = tfNames[interval] || interval;
         });
+      });
 
-        // === INIT CHART ===
-        function initChart() {
-            const container = document.getElementById('chart');
-            chart = LightweightCharts.createChart(container, {
-                layout: { background: { color: '#0f172a' }, textColor: '#cbd5e1' },
-                grid: { vertLines: { color: '#1e293b' }, horzLines: { color: '#1e293b' } },
-                crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-                rightPriceScale: { borderColor: '#334155' },
-                timeScale: { borderColor: '#334155', timeVisible: true,
-                    tickMarkFormatter: t => new Date(t * 1000).toLocaleTimeString('en-GB', {
-                        timeZone: 'Asia/Bangkok', hour: '2-digit', minute: '2-digit', hour12: false })
-                    }
-            });
-            candleSeries = chart.addCandlestickSeries({
-                upColor: '#10b981', downColor: '#ef4444', borderUpColor: '#10b981',
-                borderDownColor: '#ef4444', wickUpColor: '#10b981', wickDownColor: '#ef4444'
-            });
-            window.addEventListener('resize', () => chart.applyOptions({ width: container.clientWidth }));
+      function setSymbol(nextSymbol) {
+        symbol = nextSymbol;
+        chart.setAttribute('symbol', symbol);
+        symbolLabel.textContent = symbol;
+        openTv.href = 'https://www.tradingview.com/chart/?symbol=' + encodeURIComponent(symbol);
+        document.getElementById('oandaBtn').classList.toggle('active', symbol.startsWith('OANDA:'));
+        document.getElementById('fxidcBtn').classList.toggle('active', symbol.startsWith('FX_IDC:'));
+      }
+      document.getElementById('oandaBtn').addEventListener('click', () => setSymbol('OANDA:XAUUSD'));
+      document.getElementById('fxidcBtn').addEventListener('click', () => setSymbol('FX_IDC:XAUUSD'));
+
+      function updateClock() {
+        document.getElementById('clock').textContent =
+          new Intl.DateTimeFormat('en-GB', {
+            timeZone:'Asia/Phnom_Penh', hour:'2-digit', minute:'2-digit', second:'2-digit'
+          }).format(new Date());
+      }
+      updateClock();
+      setInterval(updateClock, 1000);
+
+      customElements.whenDefined('tv-advanced-chart').then(() => {
+        feedStatus.textContent = 'TradingView chart component loaded';
+      }).catch(() => {
+        feedStatus.textContent = 'Could not load TradingView chart';
+      });
+      setTimeout(() => {
+        if (!customElements.get('tv-advanced-chart')) {
+          feedStatus.textContent = 'TradingView script did not load — check connection or browser extensions';
         }
-
-        // === GENERATE DATA ===
-        function genData(tfMin) {
-            const data = [];
-            let price = BASE_PRICE + (Math.random() - 0.5) * 12;
-            const now = Math.floor(Date.now() / 1000);
-            const interval = tfMin * 60;
-            for (let i = 99; i >= 0; i--) {
-                const time = now - i * interval;
-                const volatility = 2 + Math.random() * 3;
-                const change = (Math.random() - 0.52) * volatility;
-                const open = price;
-                const close = price + change;
-                const high = Math.max(open, close) + Math.random() * volatility * 0.4;
-                const low = Math.min(open, close) - Math.random() * volatility * 0.4;
-                data.push({ time, open, high, low, close });
-                price = close;
-            }
-            return data;
-        }
-
-        // === FVG DETECTION ===
-        function findFVGs(data) {
-            const fvgs = [];
-            for (let i = 2; i < data.length; i++) {
-                const curr = data[i], p2 = data[i-2];
-                if (curr.low > p2.high) fvgs.push({ type: 'BUY', top: curr.low, bottom: p2.high });
-                if (curr.high < p2.low) fvgs.push({ type: 'SELL', top: p2.low, bottom: curr.high });
-            }
-            return fvgs.slice(-4);
-        }
-
-        // === ORDER BLOCK DETECTION ===
-        function findOBs(data) {
-            const obs = [];
-            for (let i = 1; i < data.length - 1; i++) {
-                const curr = data[i], next = data[i+1];
-                if (curr.close < curr.open && next.close > next.open && (next.close - curr.high) > 1.5)
-                    obs.push({ type: 'BUY', level: curr.high });
-                if (curr.close > curr.open && next.close < next.open && (curr.low - next.close) > 1.5)
-                    obs.push({ type: 'SELL', level: curr.low });
-            }
-            return obs.slice(-3);
-        }
-
-        // === SUPPORT / RESISTANCE ===
-        function findSR(data) {
-            const highs = data.slice(-20).map(d => d.high);
-            const lows = data.slice(-20).map(d => d.low);
-            return {
-                res: [...new Set(highs.sort((a,b) => b - a).slice(0,3).map(x => x.toFixed(2)))].map(parseFloat),
-                sup: [...new Set(lows.sort((a,b) => a - b).slice(0,3).map(x => x.toFixed(2)))].map(parseFloat)
-            };
-        }
-
-        // === PREMIUM/DISCOUNT ZONE ===
-        function getZone(data) {
-            const high = Math.max(...data.map(d => d.high));
-            const low = Math.min(...data.map(d => d.low));
-            const mid = (high + low) / 2;
-            const curr = data[data.length - 1].close;
-            const range = high - low;
-            if (curr > mid + range * 0.15) return 'PREMIUM';
-            if (curr < mid - range * 0.15) return 'DISCOUNT';
-            return 'EQUILIBRIUM';
-        }
-
-        // === FULL ANALYSIS ===
-        function runFullAnalysis() {
-            document.getElementById('status').textContent = 'Updating...';
-            priceData = genData(currentTF);
-            candleSeries.setData(priceData);
-            const fvgs = findFVGs(priceData);
-            const obs = findOBs(priceData);
-            const sr = findSR(priceData);
-            const zone = getZone(priceData);
-            const currPrice = priceData[priceData.length - 1].close;
-
-            document.getElementById('price').textContent = currPrice.toFixed(2);
-            document.getElementById('zone-type').textContent = zone;
-            document.getElementById('fvg-count').textContent = fvgs.length;
-
-            document.getElementById('fvg-list').innerHTML = fvgs.length > 0 
-                ? fvgs.map(f => `<p class="text-sm ${f.type==='BUY'?'text-green-400':'text-red-400'}">${f.type}: ${f.bottom.toFixed(2)} – ${f.top.toFixed(2)}</p>`).join('')
-                : '<p class="text-slate-400 text-sm">No active FVG</p>';
-
-            document.getElementById('ob-list').innerHTML = obs.length > 0 
-                ? obs.map(o => `<p class="text-sm ${o.type==='BUY'?'text-green-400':'text-red-400'}">${o.type} OB: ${o.level.toFixed(2)}</p>`).join('')
-                : '<p class="text-slate-400 text-sm">No Order Block found</p>';
-
-            document.getElementById('pd-zone').textContent = zone;
-            document.getElementById('pd-zone').className = 
-                zone === 'DISCOUNT' ? 'text-lg font-bold text-green-400' :
-                zone === 'PREMIUM' ? 'text-lg font-bold text-red-400' : 'text-lg font-bold text-slate-300';
-
-            document.getElementById('sr-levels').innerHTML = `Resistance: ${sr.res[0] || '—'} / Support: ${sr.sup[0] || '—'}`;
-
-            let signal = 'NEUTRAL', conf = 0, reason = 'Waiting for confluence';
-            let entry = currPrice.toFixed(2), sl = '—', tp = '—';
-
-            const buyFVG = fvgs.some(f => f.type==='BUY' && currPrice >= f.bottom && currPrice <= f.top);
-            const sellFVG = fvgs.some(f => f.type==='SELL' && currPrice >= f.bottom && currPrice <= f.top);
-            const buyOB = obs.some(o => o.type==='BUY' && Math.abs(currPrice - o.level) < 3);
-            const sellOB = obs.some(o => o.type==='SELL' && Math.abs(currPrice - o.level) < 3);
-
-            if (zone === 'DISCOUNT' && (buyFVG || buyOB)) {
-                signal = 'BUY';
-                conf = 60 + (buyFVG ? 15 : 0) + (buyOB ? 15 : 0);
-                reason = 'Discount Zone
+      }, 10000);
+    })();
+  </script>
+</body>
+</html>
