@@ -164,5 +164,53 @@
       }, 10000);
     })();
   </script>
-</body>
+</body># XAUUSD ICT + CRT Dashboard (GitHub Pages)
+
+This is a static GitHub Pages frontend with an official TradingView Advanced Chart Web Component.
+
+## Important data limitation
+
+TradingView's website widgets display TradingView-provided market data, but they do **not** expose their candle OHLC data to your page and TradingView does not provide a public market-data API for downloading its widget data. Therefore this version:
+- embeds the real TradingView chart;
+- lets visitors switch M1, M5, M15, H1 and H4;
+- lets visitors switch between `OANDA:XAUUSD` and `FX_IDC:XAUUSD`;
+- does not generate fake candles, fake prices, or fake BUY/SELL signals.
+
+The ICT/CRT calculation panels remain marked as waiting for an OHLC feed until you connect a separate authorized data feed or a backend that receives TradingView alert webhooks.
+
+## Publish with GitHub Pages
+
+1. Create or open your GitHub repository.
+2. Upload `index.html` to the repository root (same level as this README).
+3. Open **Settings → Pages**.
+4. Under **Build and deployment**, choose **Deploy from a branch**.
+5. Choose branch `main` and folder `/ (root)`, then Save.
+6. Wait for GitHub Pages to publish the site. The public URL will appear in the Pages section.
+
+## Customize the TradingView symbol
+
+In `index.html`, find:
+
+```html
+<tv-advanced-chart id="tvChart" symbol="OANDA:XAUUSD" interval="15" timezone="Asia/Bangkok" theme="dark"></tv-advanced-chart>
+```
+
+The page includes buttons for `OANDA:XAUUSD` and `FX_IDC:XAUUSD`. If one symbol is unavailable in the TradingView widget for your region, try the other.
+
+## What is needed for a true automatic ICT/CRT scanner
+
+You need one of these supported architectures:
+
+### Option A — External OHLC data provider
+Use a provider/broker API that explicitly licenses XAUUSD historical candles and real-time updates. Put private API keys in a serverless backend (for example, a Cloudflare Worker or Vercel Function), not in this public HTML file. The frontend can then calculate FVG, OB, liquidity sweeps, MSS, CRT range, and risk levels from actual candles.
+
+### Option B — TradingView Pine Script alerts
+Run the custom Pine Script indicator on TradingView and create alerts. Configure the alert webhook to send JSON to a backend endpoint. GitHub Pages is static hosting and cannot receive webhook POST requests by itself. The backend can store the latest alert and expose it to this page.
+
+Do not scrape TradingView's chart/widget internals or rely on unofficial endpoints.
+
+## Local test
+
+Open `index.html` in a modern browser while connected to the internet. For the most reliable test, serve it locally with a static HTTP server or publish it through GitHub Pages.
+
 </html>
